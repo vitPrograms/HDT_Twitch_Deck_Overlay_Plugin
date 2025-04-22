@@ -1,0 +1,80 @@
+﻿<Window x:Class="TwitchDeckOverlay.UI.SettingsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        mc:Ignorable="d" 
+        Title="TwitchDeckOverlay Settings" 
+        Height="300" Width="400"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" 
+                   Text="TwitchDeckOverlay Settings" 
+                   FontSize="18" FontWeight="Bold" 
+                   Margin="0,0,0,15"/>
+
+        <!-- Twitch Channel -->
+        <TextBlock Grid.Row="1" Grid.Column="0" 
+                   Text="Twitch Channel:" 
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,10"/>
+        <TextBox Grid.Row="1" Grid.Column="1" 
+                 x:Name="TwitchChannelTextBox"
+                 Margin="0,0,0,10"/>
+
+        <!-- Help text for Twitch Channel -->
+        <TextBlock Grid.Row="2" Grid.Column="1" 
+                   Text="Enter the Twitch channel name to monitor (without the @ symbol)"
+                   TextWrapping="Wrap" 
+                   Foreground="Gray" 
+                   FontStyle="Italic"
+                   Margin="0,0,0,15"/>
+
+        <!-- Blizzard API Credentials Section -->
+        <TextBlock Grid.Row="3" Grid.Column="0" 
+                   Text="Blizzard Bearer Token:" 
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,10"/>
+        <TextBox Grid.Row="3" Grid.Column="1" 
+                 x:Name="BlizzardTokenTextBox"
+                 Margin="0,0,0,10"/>
+
+        <!-- Help text for API token -->
+        <TextBlock Grid.Row="4" Grid.Column="1" 
+                   Text="Enter your Blizzard API bearer token. You can generate one at https://develop.battle.net/"
+                   TextWrapping="Wrap" 
+                   Foreground="Gray" 
+                   FontStyle="Italic"
+                   Margin="0,0,0,15"/>
+
+        <!-- Save/Cancel buttons -->
+        <StackPanel Grid.Row="6" Grid.Column="1" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right">
+            <Button x:Name="SaveButton" 
+                    Content="Save" 
+                    Width="75" Height="25" 
+                    Click="SaveButton_Click"
+                    Margin="0,0,10,0"/>
+            <Button x:Name="CancelButton" 
+                    Content="Cancel" 
+                    Width="75" Height="25" 
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

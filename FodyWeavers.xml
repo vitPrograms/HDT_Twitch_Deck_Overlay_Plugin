@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
+  <Costura>
+    <ExcludeAssemblies>
+	    HearthDb
+      HearthstoneDeckTracker
+      Newtonsoft.Json
+      MahApps.Metro
+      ControlzEx
+      System
+      System.ComponentModel.DataAnnotations
+      System.Configuration
+      System.Data
+      System.Web
+      System.Web.Extensions
+      System.Xml
+      Microsoft.CSharp
+      System.Core
+      System.Xml.Linq
+      System.Data.DataSetExtensions
+      System.Net.Http
+      System.Xaml
+      WindowsBase
+      PresentationCore
+      PresentationFramework
+	</ExcludeAssemblies>
+  </Costura>
+</Weavers>
