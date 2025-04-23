@@ -39,7 +39,7 @@ This plugin is perfect for:
 
 - **Hearthstone Deck Tracker (HDT)**:
   - Install the latest version of HDT ([official website](https://hsdecktracker.net/)).
-  - The plugin has been tested with HDT version 1.20.0 and above.
+  - The plugin has been tested with HDT version 1.43.7 and above.
 - **Operating System**:
   - Windows 10 or later.
 - **Hearthstone**:
@@ -52,7 +52,7 @@ This plugin is perfect for:
 ## Installation
 
 1. **Download the Plugin**:
-   - Download the latest version of the plugin (`TwitchDeckOverlay.dll`) from [GitHub releases](#) (replace with a link to your repository if available).
+   - Download the latest version of the plugin (`TwitchDeckOverlay.dll`) from [https://github.com/vitPrograms/HDT_Twitch_Deck_Overlay_Plugin/releases/latest](#).
 2. **Locate the HDT Plugins Folder**:
    - Open the folder where HDT is installed (usually `C:\Users\<Your_Name>\AppData\Local\HearthstoneDeckTracker`).
    - Navigate to the `Plugins` folder (create it if it doesn’t exist).
@@ -64,6 +64,8 @@ This plugin is perfect for:
 5. **Restart HDT**:
    - If the plugin doesn’t appear, restart HDT.
 
+![image](https://github.com/user-attachments/assets/fc7d2924-3626-41e7-9d78-7ec97b48ce1a)
+
 ---
 
 ## Usage
@@ -74,11 +76,15 @@ This plugin is perfect for:
 - In-game (or on the HDT main screen), you’ll see an overlay with the title "TWITCH DECKS".
 
 ### 2. Connect to Twitch
-- At the top of the overlay, there’s a text field to enter a Twitch channel name.
+- Open the plugin settings via HDT.
 - Enter the channel name (e.g., `streamer_name`) and press Enter.
 - The plugin will connect to the chat and start scanning for deck codes.
 
-**[Insert Screenshot 1: The overlay with the Twitch channel input field and the "TWITCH DECKS" title.]**
+![image](https://github.com/user-attachments/assets/669fef77-9592-466c-99d6-58d7938603e6)
+
+![image](https://github.com/user-attachments/assets/ab14a27d-ef94-4e12-9a0b-048fd3e7d95d)
+
+![image](https://github.com/user-attachments/assets/029b19d9-28b1-47a6-91ed-2f1468230fad)
 
 ### 3. View Decks
 - When a deck code appears in the chat, the plugin will add it to the list.
@@ -89,15 +95,15 @@ This plugin is perfect for:
   - The time it was added.
 - Expand a deck by clicking its header to see the card list.
 
-**[Insert Screenshot 2: The deck list in the overlay with one deck expanded, showing its cards.]**
+![image](https://github.com/user-attachments/assets/ca62021a-8749-43c1-bd42-4232081bc4ed)
 
 ### 4. View Card Details and Hero Power
 - Hover over the class name (e.g., "Mage") to see the Hero Power in a popup.
-- Hover over a card to view its full image. If the card has components (e.g., "Choose One"), they’ll appear below the main image.
+- Hover over a card to view its full image. If the card has components (e.g., "Zilliax or E.T.C."), they’ll appear below the main image.
 
-**[Insert Screenshot 3: The Hero Power popup that appears when hovering over the class name.]**
+![image](https://github.com/user-attachments/assets/161a7062-aa47-4dd4-95dc-214d610f6e08)
 
-**[Insert Screenshot 4: The card image popup with components (if applicable).]**
+![image](https://github.com/user-attachments/assets/5c4dde06-badb-4e8c-ada2-e7c68ef608c5)
 
 ### 5. Copy Deck Code
 - Click the "📋" button next to a deck to copy its code.
@@ -119,10 +125,6 @@ This plugin is perfect for:
   - The plugin is designed with fixed sizes (width: 350 pixels, max height: 600 pixels), so it works best at 1920x1080 resolution.
   - On 2K (2560x1440) or 4K (3840x2160) screens, text and elements may appear too small or too large, and popups may extend beyond the screen.
   - Adaptive scaling is planned for future updates.
-- **Popup Positioning**:
-  - If the overlay is near the right edge of the screen, popups (card images, Hero Power) may partially go off-screen.
-- **Windows Scaling**:
-  - On displays with Windows scaling (e.g., 150%), some elements may appear disproportionate.
 
 If you experience display issues, try:
 1. Changing your screen resolution to 1920x1080.
@@ -137,7 +139,7 @@ If you’re a developer and want to contribute to the project, follow these step
 
 1. **Clone the Repository**:
    ```bash
-   git clone <your_repository_link>
+   git clone https://github.com/vitPrograms/HDT_Twitch_Deck_Overlay_Plugin.git
    ```
 2. **Open the Project in Visual Studio**:
    - Open the `.sln` solution file in Visual Studio (2019 or later recommended).
@@ -148,18 +150,3 @@ If you’re a developer and want to contribute to the project, follow these step
    - The compiled `TwitchDeckOverlay.dll` will appear in the `bin/Debug` or `bin/Release` folder.
 5. **Submit a Pull Request**:
    - Fork the repository, make your changes, and submit a Pull Request.
-
----
-
-## Contact
-
-If you have questions, suggestions, or found a bug, feel free to reach out:
-
-- **GitHub**: [your GitHub profile link](#) (replace with your actual link).
-- **Discord**: [your Discord ID] (optional, if you’d like to share).
-
----
-
-## Acknowledgments
-
-Thank you to everyone who tested the plugin and provided feedback! Special thanks to [names of streamers or testers], who helped test the plugin on various resolutions.
