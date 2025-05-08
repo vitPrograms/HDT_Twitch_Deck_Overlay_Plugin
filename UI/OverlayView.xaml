@@ -4,13 +4,19 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:TwitchDeckOverlay.UI"
+             xmlns:twitch="clr-namespace:TwitchDeckOverlay"
+             xmlns:models="clr-namespace:TwitchDeckOverlay.Models"
              mc:Ignorable="d" 
              Width="350" MinHeight="50" MaxHeight="600"
-             Background="#FF282828"
-             Opacity="0.7"
+             Background="#FF1E1E1E"
+             Opacity="0.9"
              MouseEnter="UserControl_MouseEnter"
              MouseLeave="UserControl_MouseLeave">
+
     <UserControl.Resources>
+        <!-- Визначення QuadraticEaseOut на початку -->
+        <QuadraticEase x:Key="QuadraticEaseOut" EasingMode="EaseOut"/>
+
         <!-- Custom Expander style -->
         <Style x:Key="CustomExpanderStyle" TargetType="Expander">
             <Setter Property="Foreground" Value="#FFEFEFEF"/>
@@ -22,21 +28,29 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition x:Name="ContentRow" Height="0"/>
                             </Grid.RowDefinitions>
-                            <ToggleButton x:Name="ExpanderButton" IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Background="#40000000" BorderBrush="#80FFFFFF" Padding="5,2">
+                            <ToggleButton x:Name="ExpanderButton" IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Background="#FF2D2D30" BorderBrush="#FF404040" Padding="5,2" Cursor="Hand">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
-                                        <Border x:Name="HeaderBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,0,0,1" Padding="{TemplateBinding Padding}">
+                                        <Border x:Name="HeaderBorder" Background="{TemplateBinding Background}" 
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,0,0,1" 
+                    Padding="{TemplateBinding Padding}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
                                                 <ContentPresenter Grid.Column="0" ContentSource="Content" RecognizesAccessKey="True"/>
-                                                <Path x:Name="arrow" Grid.Column="1" Fill="#FFE5E5E5" Data="M 0 0 L 4 4 L 8 0 Z" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="5,0,0,0"/>
+                                                <Path x:Name="arrow" Grid.Column="1" Fill="#FFD4D4D4" 
+                          Data="M 0 0 L 4 4 L 8 0 Z" VerticalAlignment="Center" 
+                          HorizontalAlignment="Center" Margin="5,0,0,0"/>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="HeaderBorder" Property="Background" Value="#FF3C3C3C"/>
+                                            </Trigger>
                                             <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="HeaderBorder" Property="Background" Value="#FF252526"/>
                                                 <Setter TargetName="arrow" Property="Data" Value="M 0 4 L 4 0 L 8 4 Z"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
@@ -44,7 +58,7 @@
                                 </ToggleButton.Template>
                                 <ContentPresenter ContentSource="Header"/>
                             </ToggleButton>
-                            <Border x:Name="ContentBorder" Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="#40FFFFFF">
+                            <Border x:Name="ContentBorder" Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="#FF404040">
                                 <ContentPresenter />
                             </Border>
                         </Grid>
@@ -56,14 +70,18 @@
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ContentRow" Storyboard.TargetProperty="Height.Value" To="600" Duration="0:0:0.3"/>
+                                            <DoubleAnimation Storyboard.TargetName="ContentRow" 
+                                                             Storyboard.TargetProperty="Height" To="600" 
+                                                             Duration="0:0:0.2" EasingFunction="{StaticResource QuadraticEaseOut}"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ContentRow" Storyboard.TargetProperty="Height.Value" To="0" Duration="0:0:0.3"/>
+                                            <DoubleAnimation Storyboard.TargetName="ContentRow" 
+                                                             Storyboard.TargetProperty="Height" To="0" 
+                                                             Duration="0:0:0.2" EasingFunction="{StaticResource QuadraticEaseOut}"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
@@ -73,48 +91,55 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
         <!-- Shadow effect -->
-        <DropShadowEffect x:Key="CardImageShadow" ShadowDepth="5" BlurRadius="10" Opacity="0.5"/>
+        <DropShadowEffect x:Key="CardImageShadow" ShadowDepth="2" BlurRadius="4" Opacity="0.8" Color="#FF000000"/>
+
         <!-- Converters -->
         <local:RarityColorConverter x:Key="RarityColorConverter"/>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </UserControl.Resources>
+
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Name="ContentRow" Height="*" />
+            <RowDefinition Name="ContentRow" Height="*"/>
         </Grid.RowDefinitions>
         <!-- Header with drag handle -->
-        <Border x:Name="DragHandle" Background="Black" MouseLeftButtonDown="DragHandle_MouseLeftButtonDown" 
-                MouseLeftButtonUp="DragHandle_MouseLeftButtonUp" MouseMove="DragHandle_MouseMove">
+        <Border x:Name="DragHandle" Background="#FF2D2D30" BorderBrush="#FF404040" BorderThickness="0,0,0,1"
+                MouseLeftButtonDown="DragHandle_MouseLeftButtonDown" 
+                MouseLeftButtonUp="DragHandle_MouseLeftButtonUp" 
+                MouseMove="DragHandle_MouseMove">
             <Grid Margin="5,2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Ellipse x:Name="NewDeckIndicator" Width="10" Height="10" Fill="Transparent" Margin="0,0,5,0" Visibility="Hidden"/>
-                <TextBlock Grid.Column="1" Text="TWITCH DECKS" FontWeight="Bold" Foreground="#FFF9F9F9" VerticalAlignment="Center" Margin="25,0,0,0"/>
+                <Ellipse x:Name="NewDeckIndicator" Width="10" Height="10" Fill="#FF00FF00" Margin="0,0,5,0" Visibility="Hidden"/>
+                <TextBlock Grid.Column="1" Text="TWITCH DECKS" FontWeight="Bold" Foreground="#FFD4D4D4" 
+                           VerticalAlignment="Center" Margin="10,0,0,0" FontSize="14"/>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <TextBox x:Name="ChannelInput" Width="100" Margin="0,0,5,0" 
-                             Background="#40000000" Foreground="#FFEFEFEF" BorderBrush="#80FFFFFF"
-                             Text="{Binding TwitchChannel, UpdateSourceTrigger=PropertyChanged}" />
+                             Background="#FF3C3C3C" Foreground="#FFD4D4D4" BorderBrush="#FF404040"
+                             BorderThickness="1" Text="{Binding TwitchChannel, UpdateSourceTrigger=PropertyChanged}"/>
                     <Button x:Name="ToggleButton" Content="−" Width="20" Click="ToggleButton_Click" 
-                            Background="#40000000" Foreground="#FFEFEFEF" BorderBrush="#80FFFFFF" Margin="0,0,5,0"/>
+                            Background="#FF3C3C3C" Foreground="#FFD4D4D4" BorderBrush="#FF404040" BorderThickness="1" Margin="0,0,5,0"/>
                     <Button Content="X" Width="20" Click="CloseButton_Click" 
-                            Background="#40000000" Foreground="#FFEFEFEF" BorderBrush="#80FFFFFF"/>
+                            Background="#FF3C3C3C" Foreground="#FFD4D4D4" BorderBrush="#FF404040" BorderThickness="1"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Deck List -->
         <ScrollViewer Grid.Row="1" 
-              VerticalScrollBarVisibility="Auto" 
-              HorizontalScrollBarVisibility="Disabled" 
-              x:Name="DeckListScrollViewer" 
-              CanContentScroll="True" 
-              ScrollViewer.IsDeferredScrollingEnabled="True">
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled" 
+                      x:Name="DeckListScrollViewer" 
+                      CanContentScroll="True" 
+                      ScrollViewer.IsDeferredScrollingEnabled="False"
+                      Background="#FF252526">
             <ItemsControl ItemsSource="{Binding Decks}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -124,12 +149,12 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Expander Margin="0,0,0,0" 
-                          Background="#40000000" 
-                          BorderBrush="#80FFFFFF" 
-                          Style="{StaticResource CustomExpanderStyle}" 
-                          Expanded="Expander_Expanded" 
-                          Collapsed="Expander_Collapsed" 
-                          MouseLeftButtonDown="Expander_MouseLeftButtonDown">
+                                  Background="#FF2D2D30" 
+                                  BorderBrush="#FF404040" 
+                                  Style="{StaticResource CustomExpanderStyle}" 
+                                  Expanded="Expander_Expanded" 
+                                  Collapsed="Expander_Collapsed" 
+                                  MouseLeftButtonDown="Expander_MouseLeftButtonDown">
                             <Expander.Header>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -138,33 +163,32 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock> 
-                                        <Run Text="{Binding Author}" Foreground="#FFBBBBFF" /> 
-                                        <Run Text=" - " Foreground="#FFEFEFEF" /> 
-                                        <Run Text="{Binding Class}" Foreground="#FFEFEFEF" /> 
-                                        <Run Text=" (" Foreground="#FFEFEFEF" /> 
-                                        <Run Text="{Binding Mode}" Foreground="#FFEFEFEF" /> 
-                                        <Run Text=")" Foreground="#FFEFEFEF" />
+                                    <TextBlock VerticalAlignment="Center"> 
+                                        <Run Text="{Binding Author}" Foreground="#FF9B9B9B" /> 
+                                        <Run Text=" - " Foreground="#FFD4D4D4" /> 
+                                        <Run Text="{Binding Class}" Foreground="#FFD4D4D4" /> 
+                                        <Run Text=" (" Foreground="#FFD4D4D4" /> 
+                                        <Run Text="{Binding Mode}" Foreground="#FFD4D4D4" /> 
+                                        <Run Text=")" Foreground="#FFD4D4D4" />
                                     </TextBlock>
                                     <TextBlock Grid.Column="1" 
-                                       Text="{Binding TimeAdded, StringFormat=HH:mm}" 
-                                       Foreground="#FFBBBBBB" 
-                                       Margin="5,0,5,0" 
-                                       VerticalAlignment="Center"/>
+                                               Text="{Binding TimeAdded, StringFormat=HH:mm}" 
+                                               Foreground="#FF9B9B9B" 
+                                               Margin="5,0,5,0" 
+                                               VerticalAlignment="Center"/>
                                     <Button Grid.Column="2" 
                                             Content="📋" 
                                             Click="CopyDeckCode_Click" 
                                             Background="Transparent" 
-                                            Foreground="#FFEFEFEF" 
-                                            BorderBrush="#80FFFFFF" 
+                                            Foreground="#FFD4D4D4" 
+                                            BorderBrush="#FF404040" 
                                             BorderThickness="1" 
-                                            Padding="3" 
-                                            FontSize="12" 
-                                            VerticalAlignment="Center" 
-                                            Style="{StaticResource {x:Type Button}}">
+                                            Padding="2" 
+                                            FontSize="10" 
+                                            VerticalAlignment="Center">
                                         <Button.Resources>
                                             <Style TargetType="Border">
-                                                <Setter Property="CornerRadius" Value="3"/>
+                                                <Setter Property="CornerRadius" Value="2"/>
                                             </Style>
                                         </Button.Resources>
                                     </Button>
@@ -172,60 +196,56 @@
                                             Content="🗑️" 
                                             Click="RemoveDeck_Click" 
                                             Background="Transparent" 
-                                            Foreground="#FFEFEFEF" 
-                                            BorderBrush="#80FFFFFF" 
+                                            Foreground="#FFD4D4D4" 
+                                            BorderBrush="#FF404040" 
                                             BorderThickness="1" 
-                                            Padding="3" 
-                                            FontSize="12" 
+                                            Padding="2" 
+                                            FontSize="10" 
                                             VerticalAlignment="Center" 
-                                            Margin="5,0,0,0"
-                                            Style="{StaticResource {x:Type Button}}">
+                                            Margin="5,0,0,0">
                                         <Button.Resources>
                                             <Style TargetType="Border">
-                                                <Setter Property="CornerRadius" Value="3"/>
+                                                <Setter Property="CornerRadius" Value="2"/>
                                             </Style>
                                         </Button.Resources>
                                     </Button>
                                 </Grid>
                             </Expander.Header>
-                            <StackPanel Margin="0">
-                                <Grid Height="40" 
-                              Margin="5,5,5,2" 
-                              MouseEnter="ClassRow_MouseEnter" 
-                              MouseLeave="ClassRow_MouseLeave">
+                            <StackPanel Margin="5,5,5,5">
+                                <Grid Height="30" Margin="0,0,0,2" 
+                                      MouseEnter="ClassRow_MouseEnter" 
+                                      MouseLeave="ClassRow_MouseLeave">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <!-- Текст класу -->
                                     <TextBlock Grid.Column="0" 
-                                       FontSize="16" 
-                                       FontWeight="Bold" 
-                                       Foreground="#FFEFEFEF" 
-                                       VerticalAlignment="Center">
+                                               FontSize="14" 
+                                               FontWeight="Bold" 
+                                               Foreground="#FFD4D4D4" 
+                                               VerticalAlignment="Center">
                                         <Run Text="{Binding Class}"/>
-                                        <Run Text="{Binding RuneSlots, StringFormat=' ({0})'}" Foreground="#FFBBBBFF"/>
+                                        <Run Text="{Binding RuneSlots, StringFormat=' ({0})'}" Foreground="#FF9B9B9B"/>
                                     </TextBlock>
-                                    <!-- Popup для Hero Power -->
                                     <Popup Name="HeroPowerPopup" 
-                                   StaysOpen="True" 
-                                   PlacementTarget="{Binding RelativeSource={RelativeSource AncestorType=Grid}}" 
-                                   Placement="Right" 
-                                   AllowsTransparency="True" 
-                                   IsHitTestVisible="False">
+                                           StaysOpen="True" 
+                                           PlacementTarget="{Binding RelativeSource={RelativeSource AncestorType=Grid}}" 
+                                           Placement="Right" 
+                                           AllowsTransparency="True" 
+                                           IsHitTestVisible="False">
                                         <Grid>
                                             <Image Source="{Binding HeroPowerImage, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
-                                           Width="300" 
-                                           Height="450" 
-                                           Stretch="Uniform" 
-                                           Effect="{StaticResource CardImageShadow}" 
-                                           MouseLeave="HeroPowerPopup_MouseLeave"/>
+                                                   Width="240" 
+                                                   Height="360" 
+                                                   Stretch="Uniform" 
+                                                   Effect="{StaticResource CardImageShadow}" 
+                                                   MouseLeave="HeroPowerPopup_MouseLeave"/>
                                             <TextBlock Text="No Hero Power Image" 
-                                               Foreground="Red" 
-                                               FontSize="14" 
-                                               HorizontalAlignment="Center" 
-                                               VerticalAlignment="Center" 
-                                               Visibility="{Binding HeroPowerImage, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                       Foreground="#FFD4D4D4" 
+                                                       FontSize="12" 
+                                                       HorizontalAlignment="Center" 
+                                                       VerticalAlignment="Center" 
+                                                       Visibility="{Binding HeroPowerImage, Converter={StaticResource NullToVisibilityConverter}}"/>
                                         </Grid>
                                     </Popup>
                                 </Grid>
@@ -237,123 +257,78 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#40000000" 
-                                            MouseEnter="CardRow_MouseEnter" 
-                                            MouseLeave="CardRow_MouseLeave">
+                                            <Border Background="#FF2D2D30" 
+                                                    BorderBrush="#FF404040" BorderThickness="0,0,0,1"
+                                                    MouseEnter="CardRow_MouseEnter" 
+                                                    MouseLeave="CardRow_MouseLeave">
                                                 <Grid x:Name="CardRowGrid" 
-                                              Margin="5,0,5,0" 
-                                              Height="34" 
-                                              VerticalAlignment="Top">
+                                                      Margin="5,2,5,2" 
+                                                      Height="28" 
+                                                      VerticalAlignment="Top">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="50" />
+                                                        <ColumnDefinition Width="40" />
                                                         <ColumnDefinition Width="*" />
                                                         <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
-                                                    <!-- Mana Cost -->
                                                     <Grid Grid.Column="0" VerticalAlignment="Center">
-                                                        <Image Source="https://i.imgur.com/DPI3hae.png" 
-                                                       Width="40" 
-                                                       Height="40" 
-                                                       Stretch="Uniform" 
-                                                       HorizontalAlignment="Center"/>
+                                                        <Image Width="28" Height="28" 
+                                                           Source="/TwitchDeckOverlay;component/Assets/ManaIcon.png" 
+                                                           Stretch="Uniform"/>
                                                         <TextBlock Text="{Binding Cost}" 
-                                                           Foreground="#FFEFEFEF" 
-                                                           FontWeight="Bold" 
-                                                           FontSize="12" 
-                                                           HorizontalAlignment="Center" 
-                                                           VerticalAlignment="Center" />
+                                                                   Foreground="#FFF"                                                                
+                                                                   FontWeight="Bold" 
+                                                                   FontSize="16" 
+                                                                   Effect="{StaticResource CardImageShadow}"
+                                                                   HorizontalAlignment="Center" 
+                                                                   VerticalAlignment="Center" />
                                                     </Grid>
-                                                    <!-- Card Name, CropImage, and Count -->
-                                                    <Grid Grid.Column="1" Grid.ColumnSpan="2">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*" />
-                                                            <ColumnDefinition Width="Auto" />
-                                                            <!-- Для Count -->
-                                                        </Grid.ColumnDefinitions>
-                                                        <!-- Nested Grid for Name and CropImage -->
-                                                        <Grid Grid.Column="0">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*" />
-                                                                <ColumnDefinition Width="100" />
-                                                                <!-- Ширина для CropImage -->
-                                                            </Grid.ColumnDefinitions>
-                                                            <!-- CropImage -->
-                                                            <Border Grid.Column="1">
-                                                                <Border.Background>
-                                                                    <ImageBrush ImageSource="{Binding CropImage, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
-                                                                        Stretch="UniformToFill" 
-                                                                        AlignmentX="Center" 
-                                                                        AlignmentY="Center" 
-                                                                        Viewport="0,0,1,1" 
-                                                                        ViewportUnits="RelativeToBoundingBox" />
-                                                                </Border.Background>
-                                                                <!-- Gradient fade effect -->
-                                                                <Border.OpacityMask>
-                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                        <GradientStop Offset="0" Color="Transparent"/>
-                                                                        <GradientStop Offset="0.3" Color="White"/>
-                                                                        <GradientStop Offset="1" Color="White"/>
-                                                                    </LinearGradientBrush>
-                                                                </Border.OpacityMask>
-                                                            </Border>
-                                                            <!-- Card Name -->
-                                                            <StackPanel Grid.Column="0" 
-                                                                Grid.ColumnSpan="2" 
-                                                                Orientation="Horizontal" 
-                                                                VerticalAlignment="Center" 
-                                                                Margin="0,0,5,0" 
-                                                                Panel.ZIndex="1">
-                                                                <TextBlock Text="{Binding Name}" 
-                                                                   Foreground="{Binding RarityId, Converter={StaticResource RarityColorConverter}}" FontWeight="Bold" />
-                                                                <TextBlock Text=" ➕" 
-                                                                   Foreground="#FFBBBBFF" 
-                                                                   Visibility="{Binding HasComponents, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                                            </StackPanel>
-                                                        </Grid>
-                                                        <!-- Card Count -->
-                                                        <Border Grid.Column="1" 
-                                                        Background="#80000000" 
-                                                        Padding="5,0" 
-                                                        Margin="5,0,0,0">
-                                                            <TextBlock Text="{Binding Count, StringFormat='x{0}'}" 
-                                                               Foreground="#FFBBBBBB" 
-                                                               FontWeight="Bold" 
-                                                               VerticalAlignment="Center" 
-                                                               HorizontalAlignment="Right" />
-                                                        </Border>
-                                                    </Grid>
-                                                    <!-- Popup for Card Image -->
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" 
+                                                                   Foreground="{Binding RarityId, Converter={StaticResource RarityColorConverter}}" 
+                                                                   FontSize="12" Margin="5,0,5,0"/>
+                                                        <TextBlock Text="❕" Foreground="#FF00FF00" 
+                                                                   Visibility="{Binding IsMissingInCollection, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                        <TextBlock Text="➕" Foreground="#FF9B9B9B" 
+                                                                   Visibility="{Binding HasComponents, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" 
+                                                            Background="#FF3C3C3C" 
+                                                            Padding="3,0" 
+                                                            Margin="5,0,0,0">
+                                                        <TextBlock Text="{Binding Count, StringFormat='x{0}'}" 
+                                                                   Foreground="#FF9B9B9B" 
+                                                                   FontWeight="Bold" 
+                                                                   VerticalAlignment="Center" />
+                                                    </Border>
                                                     <Popup Name="CardImagePopup" 
-                                                   StaysOpen="True" 
-                                                   PlacementTarget="{Binding ElementName=CardRowGrid}" 
-                                                   Placement="Right" 
-                                                   AllowsTransparency="True" 
-                                                   IsHitTestVisible="False">
+                                                           StaysOpen="True" 
+                                                           PlacementTarget="{Binding ElementName=CardRowGrid}" 
+                                                           Placement="Right" 
+                                                           AllowsTransparency="True" 
+                                                           IsHitTestVisible="False">
                                                         <Grid>
                                                             <Grid.RowDefinitions>
                                                                 <RowDefinition Height="Auto" />
                                                                 <RowDefinition Height="Auto" />
                                                             </Grid.RowDefinitions>
-                                                            <!-- Main Card Image -->
                                                             <Image Grid.Row="0" 
-                                                           Source="{Binding ImageUrl, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
-                                                           Width="270" 
-                                                           Height="405" 
-                                                           Stretch="Uniform" 
-                                                           Effect="{StaticResource CardImageShadow}" 
-                                                           MouseLeave="CardImagePopup_MouseLeave"/>
+                                                                   Source="{Binding ImageUrl, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
+                                                                   Width="240" 
+                                                                   Height="360" 
+                                                                   Stretch="Uniform" 
+                                                                   Effect="{StaticResource CardImageShadow}" 
+                                                                   MouseLeave="CardImagePopup_MouseLeave"/>
                                                             <TextBlock Grid.Row="0" 
-                                                               Text="No Card Image" 
-                                                               Foreground="Red" 
-                                                               FontSize="14" 
-                                                               HorizontalAlignment="Center" 
-                                                               VerticalAlignment="Center" 
-                                                               Visibility="{Binding ImageUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
-                                                            <!-- Components (if any) -->
+                                                                       Text="No Card Image" 
+                                                                       Foreground="#FFD4D4D4" 
+                                                                       FontSize="12" 
+                                                                       HorizontalAlignment="Center" 
+                                                                       VerticalAlignment="Center" 
+                                                                       Visibility="{Binding ImageUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                             <ItemsControl Grid.Row="1" 
-                                                                  ItemsSource="{Binding Components}" 
-                                                                  Visibility="{Binding HasComponents, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                                  Margin="5">
+                                                                          ItemsSource="{Binding Components}" 
+                                                                          Visibility="{Binding HasComponents, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                          Margin="5">
                                                                 <ItemsControl.ItemsPanel>
                                                                     <ItemsPanelTemplate>
                                                                         <StackPanel Orientation="Horizontal" />
@@ -362,11 +337,11 @@
                                                                 <ItemsControl.ItemTemplate>
                                                                     <DataTemplate>
                                                                         <Border Margin="5,0" 
-                                                                        Width="180" 
-                                                                        Height="270">
+                                                                                Width="220" 
+                                                                                Height="340">
                                                                             <Image Source="{Binding ImageUrl, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
-                                                                           Stretch="Uniform" 
-                                                                           Effect="{StaticResource CardImageShadow}"/>
+                                                                                   Stretch="Uniform" 
+                                                                                   Effect="{StaticResource CardImageShadow}"/>
                                                                         </Border>
                                                                     </DataTemplate>
                                                                 </ItemsControl.ItemTemplate>
@@ -378,6 +353,31 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                <Grid Margin="0,5,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Image Source="/TwitchDeckOverlay;component/Assets/DustIcon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,5,0">
+                                            <Image.ToolTip>
+                                                <ToolTip Content="Total Deck Cost (Dust)" Background="#FF2D2D30" Foreground="#FFD4D4D4" BorderBrush="#FF404040"/>
+                                            </Image.ToolTip>
+                                        </Image>
+                                        <TextBlock Text="{Binding TotalDustCost}" FontSize="16" Foreground="#FFD4D4D4" VerticalAlignment="Center" 
+                       Effect="{StaticResource CardImageShadow}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Image Source="/TwitchDeckOverlay;component/Assets/DustIcon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,5,0">
+                                            <Image.ToolTip>
+                                                <ToolTip Content="Dust Needed" Background="#FF2D2D30" Foreground="#FFD4D4D4" BorderBrush="#FF404040"/>
+                                            </Image.ToolTip>
+                                        </Image>
+                                        <TextBlock Text="{Binding DustNeeded}" FontSize="16" Foreground="#dd7176" VerticalAlignment="Center" 
+                       Effect="{StaticResource CardImageShadow}"/>
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </Expander>
                     </DataTemplate>
@@ -385,18 +385,19 @@
             </ItemsControl>
         </ScrollViewer>
     </Grid>
+
     <UserControl.Triggers>
         <EventTrigger RoutedEvent="MouseEnter">
             <BeginStoryboard>
                 <Storyboard>
-                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.2"/>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.2" EasingFunction="{StaticResource QuadraticEaseOut}"/>
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>
         <EventTrigger RoutedEvent="MouseLeave">
             <BeginStoryboard>
                 <Storyboard>
-                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.7" Duration="0:0:0.2" BeginTime="0:0:5"/>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.9" Duration="0:0:0.2" BeginTime="0:0:5" EasingFunction="{StaticResource QuadraticEaseOut}"/>
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>

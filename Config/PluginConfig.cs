@@ -29,9 +29,18 @@ namespace TwitchDeckOverlay.Config
         }
 
         public string TwitchChannel { get; set; } = string.Empty;
-        public string BlizzardBearerToken { get; set; } = "EU0t5QWz3O8WoHLWQRj5eHMcGZIIRKUSfy"; // Default Bearer Token that is working at official blizzard site
+        public string BlizzardBearerToken { get; set; } = "EU0t5QWz3O8WoHLWQRj5eHMcGZIIRKUSfy";
         public double OverlayWindowLeft { get; set; } = 100.0;
         public double OverlayWindowTop { get; set; } = 100.0;
+
+        // Нові налаштування
+        public bool CheckCardsInCollectionEnabled { get; set; } = true;
+        public bool CalculateTotalDustCostEnabled { get; set; } = true;
+        public bool CalculateDustNeededEnabled { get; set; } = true;
+        public bool ShowFocusWindowOnCopyEnabled { get; set; } = true;
+
+        // Версія плагіна
+        public string PluginVersion { get; set; } = "1.0.0";
 
         public static void Load()
         {

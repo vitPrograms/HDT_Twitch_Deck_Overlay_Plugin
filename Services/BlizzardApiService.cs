@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Hearthstone_Deck_Tracker.Hearthstone;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using Newtonsoft.Json.Linq;
+using HearthMirror;
+using HearthMirror.Objects;
 using TwitchDeckOverlay.Models;
+using TwitchDeckOverlay.Config;
 
 namespace TwitchDeckOverlay.Services
 {
@@ -13,12 +17,14 @@ namespace TwitchDeckOverlay.Services
     {
         private readonly string _bearerToken;
         private readonly HttpClient _httpClient;
+        private readonly PluginConfig _config;
 
-        public BlizzardApiService(string bearerToken)
+        public BlizzardApiService(string bearerToken, PluginConfig config)
         {
             _bearerToken = bearerToken;
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _bearerToken);
+            _config = config;
             Log.Info("BlizzardApiService initialized");
         }
 
@@ -50,6 +56,11 @@ namespace TwitchDeckOverlay.Services
             }
         }
 
+        private string DeckCodeNormalizer(string deckCode)
+        {
+            return deckCode.Replace(" ", "+");
+        }
+
         private DeckInfo ParseDeckResponse(string json)
         {
             try
@@ -60,8 +71,10 @@ namespace TwitchDeckOverlay.Services
                 {
                     Class = jObject["class"]?["name"]?.ToString() ?? "Unknown",
                     Mode = jObject["format"]?.ToString() ?? "standard",
-                    DeckCode = jObject["deckCode"]?.ToString(),
+                    DeckCode = DeckCodeNormalizer(jObject["deckCode"]?.ToString()),
                     Cards = new List<CardInfo>(),
+                    DustNeeded = 0,
+                    TotalDustCost = 0,
                     RuneSlots = jObject["runeSlots"] != null ? new RuneSlots
                     {
                         Blood = (int?)jObject["runeSlots"]["blood"] ?? 0,
@@ -92,12 +105,14 @@ namespace TwitchDeckOverlay.Services
                     var card = group.Card;
                     var cardInfo = new CardInfo
                     {
+                        Id = (int?)card["id"] ?? 0,
                         Name = card["name"]?.ToString() ?? "Unknown",
                         Cost = (int?)card["manaCost"] ?? 0,
                         Count = group.Count,
                         ImageUrl = card["image"]?.ToString(),
                         CropImage = card["cropImage"]?.ToString(),
                         RarityId = (int?)card["rarityId"] ?? 1,
+                        CardSetId = (int?)card["cardSetId"] ?? 0,
                         HasComponents = false,
                         Components = new List<CardInfo>()
                     };
@@ -114,7 +129,6 @@ namespace TwitchDeckOverlay.Services
                         var sideboardCardId = sideboardCard["id"]?.ToString();
                         var cardsInSideboard = sideboard["cardsInSideboard"]?.ToObject<List<JObject>>();
 
-                        // Знаходимо карту в списку cards
                         var matchingCard = deckInfo.Cards.FirstOrDefault(c => c.Name == sideboardCard["name"]?.ToString());
                         if (matchingCard != null)
                         {
@@ -125,12 +139,14 @@ namespace TwitchDeckOverlay.Services
                                 {
                                     var component = new CardInfo
                                     {
+                                        Id = (int?)componentCard["id"] ?? 0,
                                         Name = componentCard["name"]?.ToString() ?? "Unknown",
                                         Cost = (int?)componentCard["manaCost"] ?? 0,
                                         Count = 1,
                                         ImageUrl = componentCard["image"]?.ToString(),
                                         CropImage = componentCard["cropImage"]?.ToString(),
                                         RarityId = (int?)componentCard["rarityId"] ?? 1,
+                                        CardSetId = (int?)componentCard["cardSetId"] ?? 0,
                                         HasComponents = false,
                                         Components = new List<CardInfo>()
                                     };
@@ -141,10 +157,17 @@ namespace TwitchDeckOverlay.Services
                     }
                 }
 
+                // Сортуємо карти
                 deckInfo.Cards = deckInfo.Cards
                     .OrderBy(c => c.Cost)
                     .ThenBy(c => c.Name)
                     .ToList();
+
+                // Перевіряємо наявність карт і обчислюємо пил, якщо налаштування дозволяють
+                if (_config.CheckCardsInCollectionEnabled)
+                {
+                    CheckCardsInCollection(deckInfo);
+                }
 
                 return deckInfo;
             }
@@ -152,6 +175,159 @@ namespace TwitchDeckOverlay.Services
             {
                 Log.Error($"Parse error: {ex.Message}");
                 return null;
+            }
+        }
+
+        private void CheckCardsInCollection(DeckInfo deckInfo)
+        {
+            try
+            {
+                // Отримуємо колекцію користувача через HearthMirror
+                var collection = Reflection.Client.GetCollection();
+                if (collection == null || !collection.Any())
+                {
+                    Log.Warn("Could not retrieve user's collection from Hearthstone Deck Tracker via HearthMirror.");
+                    foreach (var card in deckInfo.Cards)
+                    {
+                        card.IsMissingInCollection = false;
+                    }
+                    return;
+                }
+
+                // Створюємо словник для швидкого пошуку: DbfId -> OwnedCount
+                var collectionDict = new Dictionary<int, int>();
+                foreach (HearthMirror.Objects.Card collectedCard in collection)
+                {
+                    var dbCard = Database.GetCardFromId(collectedCard.Id);
+                    if (dbCard != null && dbCard.DbfId != 0)
+                    {
+                        if (collectionDict.ContainsKey(dbCard.DbfId))
+                        {
+                            collectionDict[dbCard.DbfId] += collectedCard.Count;
+                        }
+                        else
+                        {
+                            collectionDict[dbCard.DbfId] = collectedCard.Count;
+                        }
+                    }
+                }
+
+                // Обчислюємо пил для крафту, якщо налаштування дозволяють
+                int dustNeeded = 0; // Для докрафту відсутніх карт
+                int totalDustCost = 0; // Загальна вартість колоди
+
+                foreach (var cardInfo in deckInfo.Cards)
+                {
+                    int dbfId = cardInfo.Id;
+
+                    // Обчислюємо вартість карти, якщо увімкнено відповідне налаштування
+                    int dustCost = _config.CalculateTotalDustCostEnabled ? GetCraftingCost(cardInfo.RarityId, cardInfo.CardSetId) : 0;
+                    totalDustCost += dustCost * cardInfo.Count;
+
+                    // Перевіряємо, чи є карта в колекції
+                    if (!collectionDict.TryGetValue(dbfId, out int ownedCount) || ownedCount < cardInfo.Count)
+                    {
+                        // Карти немає в колекції або недостатня кількість копій
+                        cardInfo.IsMissingInCollection = true;
+                        Log.Info($"Card missing or insufficient in collection: {cardInfo.Name} (Required: {cardInfo.Count}, Owned: {ownedCount}, DbfId: {dbfId})");
+                        if (_config.CalculateDustNeededEnabled)
+                        {
+                            int missingCount = cardInfo.Count - (ownedCount > 0 ? ownedCount : 0);
+                            dustNeeded += dustCost * missingCount;
+                            Log.Info($"Dust needed for {cardInfo.Name}: {dustCost} * {missingCount} = {dustCost * missingCount}");
+                        }
+                    }
+                    else
+                    {
+                        cardInfo.IsMissingInCollection = false;
+                        Log.Info($"Card present: {cardInfo.Name} (Required: {cardInfo.Count}, Owned: {ownedCount}, DbfId: {dbfId})");
+                    }
+
+                    // Обчислюємо пил для sideboardCards, якщо налаштування дозволяють
+                    if (cardInfo.HasComponents)
+                    {
+                        // Якщо базова карта присутня в колекції, пропускаємо перевірку її компонентів
+                        if (!cardInfo.IsMissingInCollection)
+                        {
+                            // Додаємо вартість компонентів до загальної вартості колоди
+                            foreach (var component in cardInfo.Components)
+                            {
+                                int componentDustCost = _config.CalculateTotalDustCostEnabled ? GetCraftingCost(component.RarityId, component.CardSetId) : 0;
+                                totalDustCost += componentDustCost * component.Count;
+                                Log.Info($"Sideboard card present (skipped dust calculation due to base card ownership): {component.Name} (Required: {component.Count}, Owned: assumed, DbfId: {component.Id})");
+                            }
+                            continue;
+                        }
+
+                        // Якщо базова карта відсутня, перевіряємо компоненти
+                        foreach (var component in cardInfo.Components)
+                        {
+                            int componentDustCost = _config.CalculateTotalDustCostEnabled ? GetCraftingCost(component.RarityId, component.CardSetId) : 0;
+                            totalDustCost += componentDustCost * component.Count;
+
+                            int componentDbfId = component.Id;
+                            int componentOwnedCount = 0;
+                            bool isMissing = !collectionDict.TryGetValue(componentDbfId, out componentOwnedCount) || componentOwnedCount < component.Count;
+                            if (_config.CalculateDustNeededEnabled && isMissing)
+                            {
+                                int missingCount = component.Count - componentOwnedCount;
+                                dustNeeded += componentDustCost * missingCount;
+                                Log.Info($"Sideboard card missing: {component.Name} (Required: {component.Count}, Owned: {componentOwnedCount}, DbfId: {componentDbfId}, Dust: {componentDustCost * missingCount})");
+                            }
+                            else
+                            {
+                                Log.Info($"Sideboard card present: {component.Name} (Required: {component.Count}, Owned: {componentOwnedCount}, DbfId: {componentDbfId})");
+                            }
+                        }
+                    }
+                }
+
+                // Зберігаємо обчислені значення
+                deckInfo.DustNeeded = dustNeeded;
+                deckInfo.TotalDustCost = totalDustCost;
+                if (_config.CalculateDustNeededEnabled)
+                {
+                    Log.Info($"Total dust needed for missing cards: {dustNeeded}");
+                }
+                if (_config.CalculateTotalDustCostEnabled)
+                {
+                    Log.Info($"Total dust cost of the deck: {totalDustCost}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error checking cards in collection: {ex.Message}");
+                foreach (var card in deckInfo.Cards)
+                {
+                    card.IsMissingInCollection = false;
+                }
+            }
+        }
+
+        // Метод для отримання вартості крафту за RarityId і CardSetId
+        private int GetCraftingCost(int rarityId, int cardSetId)
+        {
+            // Карти з Core сету (cardSetId: 1637) не можна скрафтити
+            if (cardSetId == 1637)
+            {
+                return 0;
+            }
+
+            // Визначаємо вартість крафту на основі rarityId
+            switch (rarityId)
+            {
+                case 1: // Common
+                    return 40;
+                case 2: // Герої або здібності (не враховуємо)
+                    return 0;
+                case 3: // Rare
+                    return 100;
+                case 4: // Epic
+                    return 400;
+                case 5: // Legendary
+                    return 1600;
+                default:
+                    return 0; // Для невідомої рідкості
             }
         }
     }

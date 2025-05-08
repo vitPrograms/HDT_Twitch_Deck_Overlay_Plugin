@@ -50,6 +50,9 @@
     <Reference Include="HearthDb">
       <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.43.7\HearthDb.dll</HintPath>
     </Reference>
+    <Reference Include="HearthMirror">
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.44.0\HearthMirror.dll</HintPath>
+    </Reference>
     <Reference Include="HearthstoneDeckTracker">
       <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.43.7\HearthstoneDeckTracker.exe</HintPath>
     </Reference>
@@ -66,6 +69,7 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
@@ -84,7 +88,11 @@
   <ItemGroup>
     <Compile Include="Config\PluginConfig.cs" />
     <Compile Include="UI\BooleanToVisibilityConverter.cs" />
+    <Compile Include="UI\FocusSwitchWindow.xaml.cs">
+      <DependentUpon>FocusSwitchWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\NullToVisibilityConverter.cs" />
+    <Compile Include="UI\PercentageConverter.cs" />
     <Compile Include="UI\RarityColorConverter.cs" />
     <Compile Include="Models\DeckInfo.cs" />
     <Compile Include="Models\TwitchMessage.cs" />
@@ -128,6 +136,10 @@
     <Resource Include="FodyWeavers.xml" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="UI\FocusSwitchWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UI\OverlayView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -139,6 +151,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utility\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\ManaIcon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\DustIcon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.6.8.2\build\Fody.targets" Condition="Exists('packages\Fody.6.8.2\build\Fody.targets')" />

@@ -3,6 +3,7 @@
   <Costura>
     <ExcludeAssemblies>
 	    HearthDb
+		HearthMirror
       HearthstoneDeckTracker
       Newtonsoft.Json
       MahApps.Metro

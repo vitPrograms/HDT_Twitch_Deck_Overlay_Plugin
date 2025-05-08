@@ -10,6 +10,7 @@ using Hearthstone_Deck_Tracker.Utility.Extensions;
 using TwitchDeckOverlay.Models;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using TwitchDeckOverlay.Config;
+using System.Collections.Generic;
 
 namespace TwitchDeckOverlay.UI
 {
@@ -170,10 +171,38 @@ namespace TwitchDeckOverlay.UI
         {
             if (sender is Button button && button.DataContext is DeckInfo deck)
             {
-                Clipboard.SetText(deck.DeckCode);
-                var originalBorderBrush = button.BorderBrush;
-                button.BorderBrush = new SolidColorBrush(Colors.LimeGreen);
-                Task.Delay(1000).ContinueWith(_ => Dispatcher.Invoke(() => button.BorderBrush = originalBorderBrush));
+                try
+                {
+                    // Копіюємо код колоди в буфер обміну
+                    Clipboard.SetText(deck.DeckCode);
+                    Log.Info($"Deck code copied: {deck.DeckCode}");
+
+                    // Змінюємо колір рамки кнопки для візуального фідбеку
+                    var originalBorderBrush = button.BorderBrush;
+                    button.BorderBrush = new SolidColorBrush(Colors.LimeGreen);
+
+                    // Показуємо вікно фокусу, якщо увімкнено
+                    if (PluginConfig.Instance.ShowFocusWindowOnCopyEnabled)
+                    {
+                        try
+                        {
+                            var focusWindow = new FocusSwitchWindow();
+                            focusWindow.Show();
+                            Log.Info("FocusSwitchWindow created and shown.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"Failed to open FocusSwitchWindow: {ex.Message}");
+                        }
+                    }
+
+                    // Повертаємо оригінальний колір рамки через 1 секунду
+                    Task.Delay(1000).ContinueWith(_ => Dispatcher.Invoke(() => button.BorderBrush = originalBorderBrush));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to copy deck code: {ex.Message}");
+                }
             }
         }
 
@@ -199,8 +228,7 @@ namespace TwitchDeckOverlay.UI
                         var windowPosition = this.PointToScreen(new Point(0, 0));
                         var screenWidth = SystemParameters.PrimaryScreenWidth;
                         var windowRightEdge = windowPosition.X + this.ActualWidth;
-
-                        if (windowRightEdge > screenWidth - 350)
+                        if (windowRightEdge > screenWidth - 250)
                         {
                             popup.Placement = PlacementMode.Left;
                             popup.HorizontalOffset = -10;
@@ -210,7 +238,6 @@ namespace TwitchDeckOverlay.UI
                             popup.Placement = PlacementMode.Right;
                             popup.HorizontalOffset = 10;
                         }
-
                         popup.IsOpen = true;
                         var mousePos = e.GetPosition(grid);
                     }
@@ -248,14 +275,13 @@ namespace TwitchDeckOverlay.UI
                     var popup = grid.FindName("CardImagePopup") as Popup;
                     if (popup != null)
                     {
-                        await Task.Delay(100);
-                        if (border.IsMouseOver)
+                        await Task.Delay(100); // Затримка 100 мс
+                        if (border.IsMouseOver) // Перевіряємо, чи ми все ще над елементом
                         {
                             var windowPosition = this.PointToScreen(new Point(0, 0));
                             var screenWidth = SystemParameters.PrimaryScreenWidth;
                             var windowRightEdge = windowPosition.X + this.ActualWidth;
-
-                            if (windowRightEdge > screenWidth - 350)
+                            if (windowRightEdge > screenWidth - 250)
                             {
                                 popup.Placement = PlacementMode.Left;
                                 popup.HorizontalOffset = -10;
@@ -265,10 +291,8 @@ namespace TwitchDeckOverlay.UI
                                 popup.Placement = PlacementMode.Right;
                                 popup.HorizontalOffset = 10;
                             }
-
                             popup.IsOpen = true;
                             var mousePos = e.GetPosition(grid);
-                            var card = grid.DataContext as CardInfo;
                         }
                     }
                 }
@@ -297,6 +321,36 @@ namespace TwitchDeckOverlay.UI
             if (sender is FrameworkElement element && element.FindAncestor<Popup>() is Popup popup && popup.DataContext is CardInfo card)
             {
                 popup.IsOpen = false;
+            }
+        }
+
+        // Допоміжний метод для пошуку всіх елементів типу T у дереві
+        private static System.Collections.Generic.IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
+        {
+            if (depObj == null) yield break;
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+            {
+                var child = VisualTreeHelper.GetChild(depObj, i);
+                if (child is T t)
+                {
+                    yield return t;
+                }
+
+                foreach (var childOfChild in FindVisualChildren<T>(child))
+                {
+                    yield return childOfChild;
+                }
+            }
+        }
+
+        private void DeckListScrollViewer_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is ScrollViewer scrollViewer)
+            {
+                double scrollAmount = e.Delta > 0 ? -30 : 30; // 30 пікселів за рух колеса
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + scrollAmount);
+                e.Handled = true; // Позначимо подію як оброблену
             }
         }
     }

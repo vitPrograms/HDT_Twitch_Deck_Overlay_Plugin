@@ -12,6 +12,8 @@ using TwitchDeckOverlay.Services;
 using Hearthstone_Deck_Tracker.LogReader;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using TwitchDeckOverlay.Config;
+using System.Windows;
+using System.Windows.Media;
 
 namespace TwitchDeckOverlay
 {
@@ -19,6 +21,7 @@ namespace TwitchDeckOverlay
     {
         private readonly TwitchService _twitchService;
         private readonly BlizzardApiService _blizzardApi;
+        private readonly PluginConfig _config; // Додаємо для передачі в BlizzardApiService
         private readonly Regex _deckCodeRegex = new Regex(@"(?:^|\s)(?:deck code: )?([a-zA-Z0-9+/=]{20,})(?:\s|$)", RegexOptions.Compiled);
         private readonly Dispatcher _dispatcher;
         private Canvas _canvas;
@@ -47,7 +50,8 @@ namespace TwitchDeckOverlay
         {
             _dispatcher = Dispatcher.CurrentDispatcher;
             _twitchService = new TwitchService();
-            _blizzardApi = new BlizzardApiService(config.BlizzardBearerToken);
+            _config = config; // Зберігаємо config
+            _blizzardApi = new BlizzardApiService(config.BlizzardBearerToken, config); // Передаємо config
             _canvas = canvas;
             _overlayView = overlayView;
 
@@ -59,6 +63,18 @@ namespace TwitchDeckOverlay
         public void SetOverlayView(UserControl overlayView)
         {
             _overlayView = overlayView;
+
+//#if DEBUG
+//            var debugWindow = new Window
+//            {
+//                Content = overlayView,
+//                Width = 2560,
+//                Height = 1440,
+//                Topmost = true,
+//                Background = new SolidColorBrush(Color.FromRgb(0, 177, 64))
+//            };
+//            debugWindow.Show();
+//#endif
         }
 
         public async void Initialize()
@@ -79,6 +95,7 @@ namespace TwitchDeckOverlay
         {
             TwitchChannel = config.TwitchChannel;
             _blizzardApi.UpdateBearerToken(config.BlizzardBearerToken);
+ 
             Log.Info("Applied new config");
         }
 
@@ -168,7 +185,7 @@ namespace TwitchDeckOverlay
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs (propertyName));
         }
     }
 }

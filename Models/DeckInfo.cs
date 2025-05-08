@@ -33,10 +33,13 @@ namespace TwitchDeckOverlay.Models
         public List<CardInfo> Cards { get; set; }
         public RuneSlots RuneSlots { get; set; }
         public string HeroPowerImage { get; set; }
+        public int DustNeeded { get; set; }
+        public int TotalDustCost {  get; set; }
     }
 
     public class CardInfo : INotifyPropertyChanged
     {
+        public int Id { get; set; }
         public string Name { get; set; }
         public int Count { get; set; }
         public int Cost { get; set; }
@@ -48,6 +51,8 @@ namespace TwitchDeckOverlay.Models
         public List<CardInfo> Components { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
+        public bool IsMissingInCollection { get; set; }
+        public int CardSetId {  get; set; }
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {

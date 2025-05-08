@@ -15,7 +15,7 @@ namespace TwitchDeckOverlay
         private readonly PluginConfig _config;
         private MenuItem _menuItem;
 
-        public string Name => "Twitch Deck Overlay (beta)";
+        public string Name => "Twitch Deck Overlay";
         public string Description => "Displays decks shared in a Twitch chat";
         public string ButtonText => "Settings";
         public string Author => "Proogro";
