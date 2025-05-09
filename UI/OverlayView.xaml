@@ -268,6 +268,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="40" />
                                                         <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="100" />
                                                         <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
                                                     <Grid Grid.Column="0" VerticalAlignment="Center">
@@ -291,7 +292,20 @@
                                                         <TextBlock Text="➕" Foreground="#FF9B9B9B" 
                                                                    Visibility="{Binding HasComponents, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                                     </StackPanel>
-                                                    <Border Grid.Column="2" 
+                                                    <!-- CropImage -->
+                                                    <Border Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                                        <Border.OpacityMask>
+                                                            <LinearGradientBrush StartPoint="1,0" EndPoint="0,0">
+                                                                <GradientStop Offset="0" Color="White"/>
+                                                                <GradientStop Offset="0.4" Color="White"/>
+                                                                <GradientStop Offset="1" Color="Transparent"/>
+                                                            </LinearGradientBrush>
+                                                        </Border.OpacityMask>
+                                                        <Image Width="80" Height="Auto" 
+                                                           Source="{Binding CropImage, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}"                                                                
+                                                           Stretch="Uniform"/>
+                                                    </Border>
+                                                    <Border Grid.Column="3" 
                                                             Background="#FF3C3C3C" 
                                                             Padding="3,0" 
                                                             Margin="5,0,0,0">

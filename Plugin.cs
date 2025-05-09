@@ -19,7 +19,7 @@ namespace TwitchDeckOverlay
         public string Description => "Displays decks shared in a Twitch chat";
         public string ButtonText => "Settings";
         public string Author => "Proogro";
-        public Version Version => new Version(1, 0, 1);
+        public Version Version => new Version(1, 0, 2);
         public MenuItem MenuItem => _menuItem;
 
         public Plugin()
