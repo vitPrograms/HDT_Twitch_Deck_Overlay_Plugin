@@ -294,16 +294,18 @@
                                                     </StackPanel>
                                                     <!-- CropImage -->
                                                     <Border Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                                        <Border.OpacityMask>
-                                                            <LinearGradientBrush StartPoint="1,0" EndPoint="0,0">
-                                                                <GradientStop Offset="0" Color="White"/>
-                                                                <GradientStop Offset="0.4" Color="White"/>
-                                                                <GradientStop Offset="1" Color="Transparent"/>
-                                                            </LinearGradientBrush>
-                                                        </Border.OpacityMask>
-                                                        <Image Width="80" Height="Auto" 
+                                                        <Image Width="100"
                                                            Source="{Binding CropImage, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}"                                                                
-                                                           Stretch="Uniform"/>
+                                                           Stretch="Uniform"
+                                                           VerticalAlignment="Stretch">
+                                                            <Image.CacheMode>
+                                                                <BitmapCache EnableClearType="False" SnapsToDevicePixels="True" />
+                                                            </Image.CacheMode>
+                                                            <Image.Clip>
+                                                                <RectangleGeometry Rect="10,0,100,36" />
+                                                                <!-- Висота 28 відповідає висоті рядка -->
+                                                            </Image.Clip>
+                                                        </Image>
                                                     </Border>
                                                     <Border Grid.Column="3" 
                                                             Background="#FF3C3C3C" 
