@@ -119,7 +119,6 @@ namespace TwitchDeckOverlay.Services
                     deckInfo.Cards.Add(cardInfo);
                 }
 
-                // Обробка sideboardCards
                 var sideboardCards = jObject["sideboardCards"]?.ToObject<List<JObject>>();
                 if (sideboardCards != null && sideboardCards.Any())
                 {
@@ -157,13 +156,11 @@ namespace TwitchDeckOverlay.Services
                     }
                 }
 
-                // Сортуємо карти
                 deckInfo.Cards = deckInfo.Cards
                     .OrderBy(c => c.Cost)
                     .ThenBy(c => c.Name)
                     .ToList();
 
-                // Перевіряємо наявність карт і обчислюємо пил, якщо налаштування дозволяють
                 if (_config.CheckCardsInCollectionEnabled)
                 {
                     CheckCardsInCollection(deckInfo);
@@ -182,7 +179,6 @@ namespace TwitchDeckOverlay.Services
         {
             try
             {
-                // Отримуємо колекцію користувача через HearthMirror
                 var collection = Reflection.Client.GetCollection();
                 if (collection == null || !collection.Any())
                 {
@@ -194,7 +190,6 @@ namespace TwitchDeckOverlay.Services
                     return;
                 }
 
-                // Створюємо словник для швидкого пошуку: DbfId -> OwnedCount
                 var collectionDict = new Dictionary<int, int>();
                 foreach (HearthMirror.Objects.Card collectedCard in collection)
                 {
@@ -212,54 +207,42 @@ namespace TwitchDeckOverlay.Services
                     }
                 }
 
-                // Обчислюємо пил для крафту, якщо налаштування дозволяють
-                int dustNeeded = 0; // Для докрафту відсутніх карт
-                int totalDustCost = 0; // Загальна вартість колоди
+                int dustNeeded = 0;
+                int totalDustCost = 0;
 
                 foreach (var cardInfo in deckInfo.Cards)
                 {
                     int dbfId = cardInfo.Id;
 
-                    // Обчислюємо вартість карти, якщо увімкнено відповідне налаштування
                     int dustCost = _config.CalculateTotalDustCostEnabled ? GetCraftingCost(cardInfo.RarityId, cardInfo.CardSetId) : 0;
                     totalDustCost += dustCost * cardInfo.Count;
 
-                    // Перевіряємо, чи є карта в колекції
                     if (!collectionDict.TryGetValue(dbfId, out int ownedCount) || ownedCount < cardInfo.Count)
                     {
-                        // Карти немає в колекції або недостатня кількість копій
                         cardInfo.IsMissingInCollection = true;
-                        Log.Info($"Card missing or insufficient in collection: {cardInfo.Name} (Required: {cardInfo.Count}, Owned: {ownedCount}, DbfId: {dbfId})");
                         if (_config.CalculateDustNeededEnabled)
                         {
                             int missingCount = cardInfo.Count - (ownedCount > 0 ? ownedCount : 0);
                             dustNeeded += dustCost * missingCount;
-                            Log.Info($"Dust needed for {cardInfo.Name}: {dustCost} * {missingCount} = {dustCost * missingCount}");
                         }
                     }
                     else
                     {
                         cardInfo.IsMissingInCollection = false;
-                        Log.Info($"Card present: {cardInfo.Name} (Required: {cardInfo.Count}, Owned: {ownedCount}, DbfId: {dbfId})");
                     }
 
-                    // Обчислюємо пил для sideboardCards, якщо налаштування дозволяють
                     if (cardInfo.HasComponents)
                     {
-                        // Якщо базова карта присутня в колекції, пропускаємо перевірку її компонентів
                         if (!cardInfo.IsMissingInCollection)
                         {
-                            // Додаємо вартість компонентів до загальної вартості колоди
                             foreach (var component in cardInfo.Components)
                             {
                                 int componentDustCost = _config.CalculateTotalDustCostEnabled ? GetCraftingCost(component.RarityId, component.CardSetId) : 0;
                                 totalDustCost += componentDustCost * component.Count;
-                                Log.Info($"Sideboard card present (skipped dust calculation due to base card ownership): {component.Name} (Required: {component.Count}, Owned: assumed, DbfId: {component.Id})");
                             }
                             continue;
                         }
 
-                        // Якщо базова карта відсутня, перевіряємо компоненти
                         foreach (var component in cardInfo.Components)
                         {
                             int componentDustCost = _config.CalculateTotalDustCostEnabled ? GetCraftingCost(component.RarityId, component.CardSetId) : 0;
@@ -272,17 +255,11 @@ namespace TwitchDeckOverlay.Services
                             {
                                 int missingCount = component.Count - componentOwnedCount;
                                 dustNeeded += componentDustCost * missingCount;
-                                Log.Info($"Sideboard card missing: {component.Name} (Required: {component.Count}, Owned: {componentOwnedCount}, DbfId: {componentDbfId}, Dust: {componentDustCost * missingCount})");
-                            }
-                            else
-                            {
-                                Log.Info($"Sideboard card present: {component.Name} (Required: {component.Count}, Owned: {componentOwnedCount}, DbfId: {componentDbfId})");
                             }
                         }
                     }
                 }
 
-                // Зберігаємо обчислені значення
                 deckInfo.DustNeeded = dustNeeded;
                 deckInfo.TotalDustCost = totalDustCost;
                 if (_config.CalculateDustNeededEnabled)
@@ -304,16 +281,13 @@ namespace TwitchDeckOverlay.Services
             }
         }
 
-        // Метод для отримання вартості крафту за RarityId і CardSetId
         private int GetCraftingCost(int rarityId, int cardSetId)
         {
-            // Карти з Core сету (cardSetId: 1637) не можна скрафтити
             if (cardSetId == 1637)
             {
                 return 0;
             }
 
-            // Визначаємо вартість крафту на основі rarityId
             switch (rarityId)
             {
                 case 1: // Common

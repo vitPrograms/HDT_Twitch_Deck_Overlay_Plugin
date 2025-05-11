@@ -10,7 +10,6 @@ namespace TwitchDeckOverlay.UI
     {
         private DispatcherTimer _closeTimer;
 
-        // WinAPI для примусової активації вікна
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
 
@@ -18,10 +17,8 @@ namespace TwitchDeckOverlay.UI
         {
             InitializeComponent();
 
-            // Активуємо вікно при створенні
             Loaded += (s, e) =>
             {
-                Log.Info("FocusSwitchWindow loaded.");
                 IntPtr windowHandle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
                 if (SetForegroundWindow(windowHandle))
                 {
@@ -32,15 +29,13 @@ namespace TwitchDeckOverlay.UI
                     Log.Warn("Failed to activate FocusSwitchWindow.");
                 }
 
-                // Налаштування таймера для закриття вікна через 10 мс
                 _closeTimer = new DispatcherTimer
                 {
-                    Interval = TimeSpan.FromMilliseconds(10) // Майже моментально
+                    Interval = TimeSpan.FromMilliseconds(10)
                 };
                 _closeTimer.Tick += (sender, err) =>
                 {
                     _closeTimer.Stop();
-                    Log.Info("Closing FocusSwitchWindow to return focus.");
                     try
                     {
                         Close();
@@ -48,16 +43,10 @@ namespace TwitchDeckOverlay.UI
                     catch (Exception ex)
                     {
                         Log.Error($"Failed to close FocusSwitchWindow: {ex.Message}");
-                        Dispatcher.InvokeShutdown(); // Примусове завершення Dispatcher'а
+                        Dispatcher.InvokeShutdown();
                     }
                 };
                 _closeTimer.Start();
-            };
-
-            // Логування закриття
-            Closed += (s, e) =>
-            {
-                Log.Info("FocusSwitchWindow successfully closed.");
             };
         }
     }

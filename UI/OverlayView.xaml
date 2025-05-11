@@ -303,7 +303,6 @@
                                                             </Image.CacheMode>
                                                             <Image.Clip>
                                                                 <RectangleGeometry Rect="10,0,100,36" />
-                                                                <!-- Висота 28 відповідає висоті рядка -->
                                                             </Image.Clip>
                                                         </Image>
                                                     </Border>
