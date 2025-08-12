@@ -20,7 +20,6 @@ namespace TwitchDeckOverlay.UI
         private bool _isDragging;
         private Point _dragStartPoint;
         private bool _isCollapsed;
-        private DispatcherTimer _notificationTimer;
 
         public OverlayView(TwitchDeckManager deckManager)
         {
@@ -36,36 +35,22 @@ namespace TwitchDeckOverlay.UI
             Log.Info($"Restored OverlayView position: Left={PluginConfig.Instance.OverlayWindowLeft}, Top={PluginConfig.Instance.OverlayWindowTop}");
 
             _isCollapsed = false;
-            _notificationTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(0.5)
-            };
-            _notificationTimer.Tick += NotificationTimer_Tick;
 
             Log.Info("TwitchOverlayView initialized");
             _deckManager.Decks.CollectionChanged += (s, e) =>
             {
                 if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
                 {
-                    ShowNewDeckNotification();
+                    foreach (DeckInfo newDeck in e.NewItems)
+                    {
+                        newDeck.IsNew = true;
+                    }
                 }
             };
+
+            Log.Info("TwitchOverlayView initialized");
         }
 
-        private void ShowNewDeckNotification()
-        {
-            NewDeckIndicator.Visibility = Visibility.Visible;
-            NewDeckIndicator.Fill = new SolidColorBrush(Colors.Red);
-            _notificationTimer.Start();
-        }
-
-        private void NotificationTimer_Tick(object sender, EventArgs e)
-        {
-            if (NewDeckIndicator.Fill == new SolidColorBrush(Colors.Red))
-                NewDeckIndicator.Fill = new SolidColorBrush(Colors.Transparent);
-            else
-                NewDeckIndicator.Fill = new SolidColorBrush(Colors.Red);
-        }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
@@ -81,8 +66,6 @@ namespace TwitchDeckOverlay.UI
                 DeckListScrollViewer.Visibility = Visibility.Visible;
                 ToggleButton.Content = "−";
                 Opacity = 1.0;
-                NewDeckIndicator.Visibility = Visibility.Hidden;
-                _notificationTimer.Stop();
             }
         }
 
@@ -93,8 +76,6 @@ namespace TwitchDeckOverlay.UI
                 DeckListScrollViewer.Visibility = Visibility.Visible;
                 ToggleButton.Content = "−";
                 _isCollapsed = false;
-                NewDeckIndicator.Visibility = Visibility.Hidden;
-                _notificationTimer.Stop();
             }
         }
 
@@ -125,7 +106,6 @@ namespace TwitchDeckOverlay.UI
                 PluginConfig.Instance.OverlayWindowLeft = Canvas.GetLeft(this);
                 PluginConfig.Instance.OverlayWindowTop = Canvas.GetTop(this);
                 PluginConfig.Save();
-                Log.Info($"Saved OverlayView position: Left={PluginConfig.Instance.OverlayWindowLeft}, Top={PluginConfig.Instance.OverlayWindowTop}");
 
                 e.Handled = true;
             }
@@ -157,6 +137,17 @@ namespace TwitchDeckOverlay.UI
 
         private void Expander_Expanded(object sender, RoutedEventArgs e)
         {
+            if (sender is Expander expander && expander.DataContext is DeckInfo deck)
+            {
+                deck.IsNew = false;
+
+                // Явно оновлюємо прив’язку для UI
+                Dispatcher.Invoke(() =>
+                {
+                    expander.DataContext = null;
+                    expander.DataContext = deck;
+                });
+            }
         }
 
         private void Expander_Collapsed(object sender, RoutedEventArgs e)
@@ -175,7 +166,6 @@ namespace TwitchDeckOverlay.UI
                 {
                     // Копіюємо код колоди в буфер обміну
                     Clipboard.SetText(deck.DeckCode);
-                    Log.Info($"Deck code copied: {deck.DeckCode}");
 
                     // Змінюємо колір рамки кнопки для візуального фідбеку
                     var originalBorderBrush = button.BorderBrush;
@@ -188,7 +178,6 @@ namespace TwitchDeckOverlay.UI
                         {
                             var focusWindow = new FocusSwitchWindow();
                             focusWindow.Show();
-                            Log.Info("FocusSwitchWindow created and shown.");
                         }
                         catch (Exception ex)
                         {
@@ -211,7 +200,6 @@ namespace TwitchDeckOverlay.UI
             if (sender is Button button && button.DataContext is DeckInfo deck)
             {
                 _deckManager.Decks.Remove(deck);
-                Log.Info($"Removed deck from collection. Current deck count: {_deckManager.Decks.Count}");
             }
         }
 

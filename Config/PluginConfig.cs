@@ -40,7 +40,7 @@ namespace TwitchDeckOverlay.Config
         public bool ShowFocusWindowOnCopyEnabled { get; set; } = true;
 
         // Версія плагіна
-        public string PluginVersion { get; set; } = "1.0.3";
+        public string PluginVersion { get; set; } = "1.0.4";
 
         public static void Load()
         {

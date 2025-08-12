@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -99,6 +99,23 @@ namespace TwitchDeckOverlay
             Log.Info("Applied new config");
         }
 
+        // Додаємо метод для перевірки стану підключення
+        public async Task CheckConnectionHealthAsync()
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(TwitchChannel))
+                {
+                    Log.Info("Performing connection health check...");
+                    await _twitchService.ConnectAsync(TwitchChannel);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Connection health check failed: {ex.Message}");
+            }
+        }
+
         private async Task ReconnectAsync()
         {
             Log.Info("Reconnecting to Twitch...");
@@ -125,15 +142,22 @@ namespace TwitchDeckOverlay
                     return;
                 }
 
+                Log.Debug($"Processing Twitch message: {raw}");
+
                 var match = Regex.Match(raw, @":(?<user>[^!]+)![^ ]+ PRIVMSG #[^ ]+ :(?<msg>.+)");
                 if (match.Success)
                 {
                     var username = match.Groups["user"].Value;
                     var content = match.Groups["msg"].Value;
-                    Log.Info($"Parsed message - User: {username}, Content: {content}");
+
+                    Log.Debug($"Parsed message from {username}: {content}");
 
                     var message = new TwitchMessage(username, content);
                     HandleTwitchMessage(message);
+                }
+                else
+                {
+                    Log.Warn($"Failed to parse Twitch message: {raw}");
                 }
             }
             catch (Exception ex)
@@ -146,7 +170,6 @@ namespace TwitchDeckOverlay
         {
             try
             {
-                Log.Info($"Processing Twitch message from {message.Username}: {message.Content}");
                 var match = _deckCodeRegex.Match(message.Content);
                 if (match.Success)
                 {
@@ -169,10 +192,6 @@ namespace TwitchDeckOverlay
                             }
                         });
                     }
-                }
-                else
-                {
-                    Log.Info("No deck code found in message");
                 }
             }
             catch (Exception ex)

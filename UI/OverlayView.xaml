@@ -99,6 +99,7 @@
         <local:RarityColorConverter x:Key="RarityColorConverter"/>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:BooleanToVisibilityConverter x:Key="BooleanToColorConverter"/>
     </UserControl.Resources>
 
     <Grid x:Name="MainGrid">
@@ -117,7 +118,14 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Ellipse x:Name="NewDeckIndicator" Width="10" Height="10" Fill="#FF00FF00" Margin="0,0,5,0" Visibility="Hidden"/>
+                <Image x:Name="TwitchLogo" 
+                   Grid.Column="0" 
+                   Source="/TwitchDeckOverlay;component/Assets/TwitchLogo.png" 
+                   Width="30" 
+                   Height="30" 
+                   Stretch="Fill" 
+                   VerticalAlignment="Center" 
+                   Margin="0,0,0,0"/>
                 <TextBlock Grid.Column="1" Text="TWITCH DECKS" FontWeight="Bold" Foreground="#FFD4D4D4" 
                            VerticalAlignment="Center" Margin="10,0,0,0" FontSize="14"/>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
@@ -164,6 +172,13 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock VerticalAlignment="Center"> 
+                                        <Ellipse
+                                             Width="5" 
+                                             Height="5" 
+                                             Fill="Red" 
+                                             VerticalAlignment="Center" 
+                                             Margin="5,0,0,0"
+                                             Visibility="{Binding IsNew, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         <Run Text="{Binding Author}" Foreground="#FF9B9B9B" /> 
                                         <Run Text=" - " Foreground="#FFD4D4D4" /> 
                                         <Run Text="{Binding Class}" Foreground="#FFD4D4D4" /> 
@@ -234,12 +249,25 @@
                                            AllowsTransparency="True" 
                                            IsHitTestVisible="False">
                                         <Grid>
-                                            <Image Source="{Binding HeroPowerImage, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Image Grid.Column="0"
+                                                   Source="{Binding HeroPowerImage, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
                                                    Width="240" 
                                                    Height="360" 
                                                    Stretch="Uniform" 
                                                    Effect="{StaticResource CardImageShadow}" 
                                                    MouseLeave="HeroPowerPopup_MouseLeave"/>
+                                            <Image Grid.Column="1" 
+                                                   Source="{Binding ImbuedHeroPowerImage, FallbackValue='https://www.pngall.com/wp-content/uploads/5/Hearthstone-PNG-High-Quality-Image.png'}" 
+                                                   Width="240" 
+                                                   Height="360" 
+                                                   Stretch="Uniform" 
+                                                   Effect="{StaticResource CardImageShadow}" 
+                                                   MouseLeave="HeroPowerPopup_MouseLeave"
+                                                   />
                                             <TextBlock Text="No Hero Power Image" 
                                                        Foreground="#FFD4D4D4" 
                                                        FontSize="12" 

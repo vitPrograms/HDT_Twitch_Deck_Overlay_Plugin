@@ -262,14 +262,6 @@ namespace TwitchDeckOverlay.Services
 
                 deckInfo.DustNeeded = dustNeeded;
                 deckInfo.TotalDustCost = totalDustCost;
-                if (_config.CalculateDustNeededEnabled)
-                {
-                    Log.Info($"Total dust needed for missing cards: {dustNeeded}");
-                }
-                if (_config.CalculateTotalDustCostEnabled)
-                {
-                    Log.Info($"Total dust cost of the deck: {totalDustCost}");
-                }
             }
             catch (Exception ex)
             {

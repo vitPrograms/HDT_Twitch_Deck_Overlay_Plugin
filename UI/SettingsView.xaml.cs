@@ -31,7 +31,6 @@ namespace TwitchDeckOverlay.UI
             // Встановлюємо DataContext для прив'язки
             DataContext = _config;
 
-            Log.Info("SettingsView opened with current config");
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -53,7 +52,6 @@ namespace TwitchDeckOverlay.UI
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            Log.Info("SettingsView closed without saving");
             DialogResult = false;
             Close();
         }
@@ -137,9 +135,6 @@ namespace TwitchDeckOverlay.UI
                     var response = await client.GetAsync(GitHubApiUrl);
                     var json = JObject.Parse(await response.Content.ReadAsStringAsync());
 
-                    // Логуємо всі assets для діагностики
-                    Log.Info($"Available assets: {json["assets"]?.ToString()}");
-
                     // Шукаємо ZIP-файл серед assets
                     string downloadUrl = null;
                     foreach (var asset in json["assets"])
@@ -168,7 +163,6 @@ namespace TwitchDeckOverlay.UI
 
                     // Зберігаємо ZIP
                     File.WriteAllBytes(tempZipPath, zipBytes);
-                    Log.Info($"Saved ZIP to: {tempZipPath}");
 
                     // Перевіряємо, чи файл є коректним ZIP
                     try
@@ -206,7 +200,6 @@ namespace TwitchDeckOverlay.UI
 
                     // Очищаємо тимчасові файли
                     File.Delete(tempZipPath);
-                    Log.Info("Temporary ZIP file deleted.");
 
                     // Оновлюємо версію в конфігурації
                     PluginConfig.Instance.PluginVersion = newVersion;
