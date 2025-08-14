@@ -6,7 +6,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>TwitchDeckOverlay</AssemblyName>
     <RootNamespace>TwitchDeckOverlay</RootNamespace>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 

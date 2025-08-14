@@ -5,6 +5,7 @@
 **TwitchDeckOverlay** is a plugin for Hearthstone Deck Tracker (HDT) that allows players and streamers to view Hearthstone decks shared in Twitch chat directly in-game via an overlay. The plugin automatically parses deck codes from Twitch chat messages and displays them in a convenient interface where you can view deck details, copy deck codes, or remove decks from the list.
 
 This plugin is perfect for:
+
 - **Hearthstone streamers** who want to quickly view decks shared by their audience.
 - **Players** watching streams who want to try out decks posted in chat.
 
@@ -71,11 +72,13 @@ This plugin is perfect for:
 ## Usage
 
 ### 1. Launch the Plugin
+
 - Start Hearthstone Deck Tracker.
 - Enable the plugin in **Settings → Plugins** if it’s not already active.
 - In-game (or on the HDT main screen), you’ll see an overlay with the title "TWITCH DECKS".
 
 ### 2. Connect to Twitch
+
 - Open the plugin settings via HDT.
 - Enter the channel name (e.g., `streamer_name`) and press Enter.
 - The plugin will connect to the chat and start scanning for deck codes.
@@ -87,6 +90,7 @@ This plugin is perfect for:
 ![image](https://github.com/user-attachments/assets/029b19d9-28b1-47a6-91ed-2f1468230fad)
 
 ### 3. View Decks
+
 - When a deck code appears in the chat, the plugin will add it to the list.
 - Each deck displays:
   - The author’s name (from Twitch chat).
@@ -98,6 +102,7 @@ This plugin is perfect for:
 ![image](https://github.com/user-attachments/assets/ca62021a-8749-43c1-bd42-4232081bc4ed)
 
 ### 4. View Card Details and Hero Power
+
 - Hover over the class name (e.g., "Mage") to see the Hero Power in a popup.
 - Hover over a card to view its full image. If the card has components (e.g., "Zilliax or E.T.C."), they’ll appear below the main image.
 
@@ -106,13 +111,16 @@ This plugin is perfect for:
 ![image](https://github.com/user-attachments/assets/5c4dde06-badb-4e8c-ada2-e7c68ef608c5)
 
 ### 5. Copy Deck Code
+
 - Click the "📋" button next to a deck to copy its code.
 - The code is copied to your clipboard—paste it into Hearthstone (Ctrl+V) to create the deck.
 
 ### 6. Remove a Deck
+
 - Click "🗑️" to remove a deck from the list.
 
 ### 7. Move and Collapse the Overlay
+
 - Drag the overlay by the "TWITCH DECKS" header to reposition it.
 - Click "−" to collapse the overlay (only the header will remain).
 - Click "+" to expand it back.
@@ -127,6 +135,7 @@ This plugin is perfect for:
   - Adaptive scaling is planned for future updates.
 
 If you experience display issues, try:
+
 1. Changing your screen resolution to 1920x1080.
 2. Setting Windows scaling to 100%.
 3. Moving the overlay closer to the center of the screen.
@@ -150,3 +159,33 @@ If you’re a developer and want to contribute to the project, follow these step
    - The compiled `TwitchDeckOverlay.dll` will appear in the `bin/Debug` or `bin/Release` folder.
 5. **Submit a Pull Request**:
    - Fork the repository, make your changes, and submit a Pull Request.
+
+---
+
+## Performance Optimizations
+
+The plugin includes several performance optimizations for better user experience:
+
+### Optimized Features
+
+- **API Response Caching** - Repeated deck codes are served from cache (30 min TTL)
+- **Collection Caching** - User's card collection is cached for faster lookups (5 min TTL)
+- **Concurrent Request Limiting** - Maximum 3 simultaneous API requests to prevent overload
+- **Memory Management** - Automatic cache cleanup and resource disposal
+- **Performance Monitoring** - Background monitoring of operation times and resource usage
+
+### Performance Testing
+
+The plugin includes built-in performance monitoring accessible via:
+
+**HDT → Plugins → TwitchDeckOverlay Settings → Performance Testing**
+
+- **Run Performance Test** - Shows current performance metrics
+- **Memory Test** - Tests memory usage and garbage collection
+
+### Expected Performance
+
+- **First deck parse**: ~2-3 seconds (API call)
+- **Cached deck parse**: <50ms (from cache)
+- **Memory usage**: Stable, with automatic cleanup
+- **API load**: Controlled to prevent rate limiting

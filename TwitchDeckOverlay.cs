@@ -14,6 +14,7 @@ using Hearthstone_Deck_Tracker.Utility.Logging;
 using TwitchDeckOverlay.Config;
 using System.Windows;
 using System.Windows.Media;
+using TwitchDeckOverlay.Utility;
 
 namespace TwitchDeckOverlay
 {
@@ -27,6 +28,10 @@ namespace TwitchDeckOverlay
         private Canvas _canvas;
         private UserControl _overlayView;
         private const int MaxDeckCount = 5;
+        
+        // Моніторинг продуктивності
+        private readonly PerformanceMonitor _performanceMonitor;
+        private readonly ResourceMonitor _resourceMonitor;
 
         public ObservableCollection<DeckInfo> Decks { get; } = new ObservableCollection<DeckInfo>();
 
@@ -51,13 +56,19 @@ namespace TwitchDeckOverlay
             _dispatcher = Dispatcher.CurrentDispatcher;
             _twitchService = new TwitchService();
             _config = config; // Зберігаємо config
-            _blizzardApi = new BlizzardApiService(config.BlizzardBearerToken, config); // Передаємо config
+            _blizzardApi = new BlizzardApiService(config.BlizzardBearerToken, config);
             _canvas = canvas;
             _overlayView = overlayView;
 
             _twitchService.MessageReceived += HandleRawMessage;
 
             TwitchChannel = config.TwitchChannel;
+            
+            // Ініціалізація моніторингу
+            _performanceMonitor = new PerformanceMonitor();
+            _resourceMonitor = new ResourceMonitor(30000); // Моніторинг кожні 30 секунд (менше спаму)
+            
+            Log.Info("TwitchDeckManager initialized with performance monitoring");
         }
 
         public void SetOverlayView(UserControl overlayView)
@@ -88,7 +99,15 @@ namespace TwitchDeckOverlay
         public void Shutdown()
         {
             _twitchService.Disconnect();
-            Log.Info("TwitchDeckManager shutdown");
+            
+            // Генеруємо фінальний звіт про продуктивність
+            _performanceMonitor?.LogPerformanceReport();
+            _resourceMonitor?.LogResourceReport();
+            
+            _performanceMonitor?.Dispose();
+            _resourceMonitor?.Dispose();
+            
+            Log.Info("TwitchDeckManager shutdown with performance reports");
         }
 
         public void ApplyConfig(PluginConfig config)
@@ -135,68 +154,88 @@ namespace TwitchDeckOverlay
 
         private void HandleRawMessage(string raw)
         {
-            try
+            using (var operation = _performanceMonitor.StartOperation("HandleRawMessage"))
             {
-                if (!raw.Contains("PRIVMSG"))
+                try
                 {
-                    return;
+                    if (!raw.Contains("PRIVMSG"))
+                    {
+                        return;
+                    }
+
+                    Log.Debug($"Processing Twitch message: {raw}");
+
+                    var match = Regex.Match(raw, @":(?<user>[^!]+)![^ ]+ PRIVMSG #[^ ]+ :(?<msg>.+)");
+                    if (match.Success)
+                    {
+                        var username = match.Groups["user"].Value;
+                        var content = match.Groups["msg"].Value;
+
+                        Log.Debug($"Parsed message from {username}: {content}");
+
+                        var message = new TwitchMessage(username, content);
+                        HandleTwitchMessage(message);
+                    }
+                    else
+                    {
+                        Log.Warn($"Failed to parse Twitch message: {raw}");
+                    }
                 }
-
-                Log.Debug($"Processing Twitch message: {raw}");
-
-                var match = Regex.Match(raw, @":(?<user>[^!]+)![^ ]+ PRIVMSG #[^ ]+ :(?<msg>.+)");
-                if (match.Success)
+                catch (Exception ex)
                 {
-                    var username = match.Groups["user"].Value;
-                    var content = match.Groups["msg"].Value;
-
-                    Log.Debug($"Parsed message from {username}: {content}");
-
-                    var message = new TwitchMessage(username, content);
-                    HandleTwitchMessage(message);
+                    Log.Error($"IRC parse error: {ex.Message}");
                 }
-                else
-                {
-                    Log.Warn($"Failed to parse Twitch message: {raw}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"IRC parse error: {ex.Message}");
             }
         }
 
         private async void HandleTwitchMessage(TwitchMessage message)
         {
-            try
+            using (var operation = _performanceMonitor.StartOperation("HandleTwitchMessage"))
             {
-                var match = _deckCodeRegex.Match(message.Content);
-                if (match.Success)
+                try
                 {
-                    string deckCode = match.Groups[1].Value;
-                    var deckInfo = await _blizzardApi.GetDeckInfoAsync(deckCode);
-                    if (deckInfo != null)
+                    var match = _deckCodeRegex.Match(message.Content);
+                    if (match.Success)
                     {
-                        deckInfo.Author = message.Username;
-                        deckInfo.TimeAdded = message.Timestamp;
-
-                        _dispatcher.Invoke(() =>
+                        string deckCode = match.Groups[1].Value;
+                        Log.Info($"Found deck code: {deckCode}, starting deck parsing...");
+                        
+                        using (var deckParseOperation = _performanceMonitor.StartOperation("ParseDeckCode"))
                         {
-                            Decks.Insert(0, deckInfo);
-                            Log.Info($"Added deck to collection. Current deck count: {Decks.Count}");
-
-                            while (Decks.Count > MaxDeckCount)
+                            var deckInfo = await _blizzardApi.GetDeckInfoAsync(deckCode);
+                            if (deckInfo != null)
                             {
-                                Decks.RemoveAt(Decks.Count - 1);
-                                Log.Info($"Removed oldest deck. Current deck count: {Decks.Count}");
+                                deckInfo.Author = message.Username;
+                                deckInfo.TimeAdded = message.Timestamp;
+
+                                _dispatcher.Invoke(() =>
+                                {
+                                    using (var uiOperation = _performanceMonitor.StartOperation("UpdateDeckCollection"))
+                                    {
+                                        Decks.Insert(0, deckInfo);
+                                        Log.Info($"Added deck to collection. Current deck count: {Decks.Count}");
+
+                                        while (Decks.Count > MaxDeckCount)
+                                        {
+                                            Decks.RemoveAt(Decks.Count - 1);
+                                            Log.Info($"Removed oldest deck. Current deck count: {Decks.Count}");
+                                        }
+                                    }
+                                });
+                                
+                                Log.Info($"Successfully processed deck from {message.Username} with {deckInfo.Cards?.Count ?? 0} cards");
                             }
-                        });
+                            else
+                            {
+                                Log.Warn($"Failed to parse deck code: {deckCode}");
+                            }
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Error handling Twitch message: {ex.Message}");
+                catch (Exception ex)
+                {
+                    Log.Error($"Error handling Twitch message: {ex.Message}");
+                }
             }
         }
 

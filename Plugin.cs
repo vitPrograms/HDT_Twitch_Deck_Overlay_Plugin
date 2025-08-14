@@ -22,7 +22,7 @@ namespace TwitchDeckOverlay
         public string Description => "Displays decks shared in a Twitch chat";
         public string ButtonText => "Settings";
         public string Author => "Proogro";
-        public Version Version => new Version(1, 0, 4);
+        public Version Version => new Version(1, 1, 0);
         public MenuItem MenuItem => _menuItem;
 
         public Plugin()
@@ -30,7 +30,7 @@ namespace TwitchDeckOverlay
             // Load config
             _config = PluginConfig.Instance;
 
-            // Create menu item
+            // Create simple menu item - HDT plugins typically use single menu item
             _menuItem = new MenuItem { Header = "TwitchDeckOverlay Settings" };
             _menuItem.Click += (sender, args) => OpenSettings();
         }
@@ -107,5 +107,7 @@ namespace TwitchDeckOverlay
             _healthCheckTimer.Start();
             Log.Info("Health check timer started (15 minute intervals)");
         }
+        
+
     }
 }

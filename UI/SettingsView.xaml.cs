@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using TwitchDeckOverlay.Config;
 using Hearthstone_Deck_Tracker.Utility.Extensions;
 
+
 namespace TwitchDeckOverlay.UI
 {
     public partial class SettingsView : Window
@@ -217,5 +218,65 @@ namespace TwitchDeckOverlay.UI
                 MessageBox.Show("An error occurred while updating the plugin.", "Error");
             }
         }
+
+        // Performance Testing Event Handlers
+        private void RunPerformanceTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                RunPerformanceTestButton.IsEnabled = false;
+                RunPerformanceTestButton.Content = "Running...";
+
+                Log.Info("Performance monitoring is active. Check HDT logs for performance metrics.");
+                
+                MessageBox.Show("Performance monitoring is active in the background.\nCheck HDT logs for detailed performance metrics.", 
+                    "Performance Monitoring", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Performance monitoring error: {ex.Message}");
+                MessageBox.Show($"Performance monitoring error: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                RunPerformanceTestButton.IsEnabled = true;
+                RunPerformanceTestButton.Content = "Run Performance Test";
+            }
+        }
+
+        private void RunMemoryTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                RunMemoryTestButton.IsEnabled = false;
+                RunMemoryTestButton.Content = "Testing...";
+
+                // Примусова збірка сміття для тестування пам'яті
+                var beforeGC = GC.GetTotalMemory(false);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                var afterGC = GC.GetTotalMemory(false);
+                
+                Log.Info($"Memory test: Before GC: {beforeGC / (1024.0 * 1024.0):F2} MB, After GC: {afterGC / (1024.0 * 1024.0):F2} MB");
+                
+                MessageBox.Show($"Memory test completed!\nBefore GC: {beforeGC / (1024.0 * 1024.0):F2} MB\nAfter GC: {afterGC / (1024.0 * 1024.0):F2} MB", 
+                    "Memory Test", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Memory test error: {ex.Message}");
+                MessageBox.Show($"Memory test failed: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                RunMemoryTestButton.IsEnabled = true;
+                RunMemoryTestButton.Content = "Memory Test";
+            }
+        }
+
+
     }
 }
