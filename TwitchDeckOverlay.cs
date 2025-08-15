@@ -22,7 +22,7 @@ namespace TwitchDeckOverlay
     {
         private readonly TwitchService _twitchService;
         private readonly BlizzardApiService _blizzardApi;
-        private readonly PluginConfig _config; // Додаємо для передачі в BlizzardApiService
+        private readonly PluginConfig _config;
         private readonly Regex _deckCodeRegex = new Regex(@"(?:^|\s)(?:deck code: )?([a-zA-Z0-9+/=]{20,})(?:\s|$)", RegexOptions.Compiled);
         private readonly Dispatcher _dispatcher;
         private Canvas _canvas;
@@ -32,6 +32,7 @@ namespace TwitchDeckOverlay
         // Моніторинг продуктивності
         private readonly PerformanceMonitor _performanceMonitor;
         private readonly ResourceMonitor _resourceMonitor;
+
 
         public ObservableCollection<DeckInfo> Decks { get; } = new ObservableCollection<DeckInfo>();
 
@@ -74,19 +75,9 @@ namespace TwitchDeckOverlay
         public void SetOverlayView(UserControl overlayView)
         {
             _overlayView = overlayView;
-
-//#if DEBUG
-//            var debugWindow = new Window
-//            {
-//                Content = overlayView,
-//                Width = 2560,
-//                Height = 1440,
-//                Topmost = true,
-//                Background = new SolidColorBrush(Color.FromRgb(0, 177, 64))
-//            };
-//            debugWindow.Show();
-//#endif
         }
+
+
 
         public async void Initialize()
         {
@@ -163,7 +154,7 @@ namespace TwitchDeckOverlay
                         return;
                     }
 
-                    Log.Debug($"Processing Twitch message: {raw}");
+
 
                     var match = Regex.Match(raw, @":(?<user>[^!]+)![^ ]+ PRIVMSG #[^ ]+ :(?<msg>.+)");
                     if (match.Success)
@@ -171,7 +162,7 @@ namespace TwitchDeckOverlay
                         var username = match.Groups["user"].Value;
                         var content = match.Groups["msg"].Value;
 
-                        Log.Debug($"Parsed message from {username}: {content}");
+
 
                         var message = new TwitchMessage(username, content);
                         HandleTwitchMessage(message);
@@ -198,15 +189,30 @@ namespace TwitchDeckOverlay
                     if (match.Success)
                     {
                         string deckCode = match.Groups[1].Value;
-                        Log.Info($"Found deck code: {deckCode}, starting deck parsing...");
+
                         
                         using (var deckParseOperation = _performanceMonitor.StartOperation("ParseDeckCode"))
                         {
-                            var deckInfo = await _blizzardApi.GetDeckInfoAsync(deckCode);
+                            DeckInfo deckInfo = null;
+                            
+                            // Спробуємо спочатку HearthDb парсер
+                            if (HearthDbDeckParser.IsAvailable)
+                            {
+                                Log.Info("Using HearthDb parser for deck code");
+                                deckInfo = HearthDbDeckParser.ParseDeckCode(deckCode, message.Username);
+                            }
+                            
+                            // Якщо HearthDb не спрацював, використовуємо Blizzard API
+                            if (deckInfo == null)
+                            {
+                                Log.Info("Using Blizzard API for deck code");
+                                deckInfo = await _blizzardApi.GetDeckInfoAsync(deckCode);
+                            }
                             if (deckInfo != null)
                             {
                                 deckInfo.Author = message.Username;
                                 deckInfo.TimeAdded = message.Timestamp;
+                                deckInfo.DeckCode = deckCode;
 
                                 _dispatcher.Invoke(() =>
                                 {
@@ -214,6 +220,8 @@ namespace TwitchDeckOverlay
                                     {
                                         Decks.Insert(0, deckInfo);
                                         Log.Info($"Added deck to collection. Current deck count: {Decks.Count}");
+
+
 
                                         while (Decks.Count > MaxDeckCount)
                                         {
@@ -223,7 +231,7 @@ namespace TwitchDeckOverlay
                                     }
                                 });
                                 
-                                Log.Info($"Successfully processed deck from {message.Username} with {deckInfo.Cards?.Count ?? 0} cards");
+
                             }
                             else
                             {

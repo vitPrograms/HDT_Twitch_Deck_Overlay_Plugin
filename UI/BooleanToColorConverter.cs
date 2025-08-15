@@ -1,24 +1,24 @@
+using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using System;
 
-public class BooleanToColorConverter : IValueConverter
+namespace TwitchDeckOverlay.UI
 {
-    public string TrueColor { get; set; }
-    public string FalseColor { get; set; }
-
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public class BooleanToColorConverter : IValueConverter
     {
-        if (value is bool isConnected)
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return isConnected ? new SolidColorBrush((Color)ColorConverter.ConvertFromString(TrueColor)) : new SolidColorBrush((Color)ColorConverter.ConvertFromString(FalseColor));
+            if (value is bool boolValue)
+            {
+                return boolValue ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Red);
+            }
+            return new SolidColorBrush(Colors.Gray);
         }
-        return new SolidColorBrush(Colors.Red);
-    }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

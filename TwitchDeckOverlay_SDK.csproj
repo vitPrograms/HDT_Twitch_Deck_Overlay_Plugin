@@ -59,6 +59,30 @@
     <Resource Include="FodyWeavers.xml" />
   </ItemGroup>
 
+  <!-- Виключаємо тестові папки з компіляції -->
+  <ItemGroup>
+    <Compile Remove="TestCardList\**" />
+    <EmbeddedResource Remove="TestCardList\**" />
+    <None Remove="TestCardList\**" />
+    <Page Remove="TestCardList\**" />
+  </ItemGroup>
+
+  <!-- Виключаємо папку HDT з компіляції -->
+  <ItemGroup>
+    <Compile Remove="Hearthstone-Deck-Tracker\**" />
+    <EmbeddedResource Remove="Hearthstone-Deck-Tracker\**" />
+    <None Remove="Hearthstone-Deck-Tracker\**" />
+    <Page Remove="Hearthstone-Deck-Tracker\**" />
+  </ItemGroup>
+
+  <!-- Виключаємо папку hdt-plugin-example з компіляції -->
+  <ItemGroup>
+    <Compile Remove="hdt-plugin-example\**" />
+    <EmbeddedResource Remove="hdt-plugin-example\**" />
+    <None Remove="hdt-plugin-example\**" />
+    <Page Remove="hdt-plugin-example\**" />
+  </ItemGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;%25AppData%25\HearthstoneDeckTracker\Plugins\TwitchDeckOverlay\&quot;" />
   </Target>

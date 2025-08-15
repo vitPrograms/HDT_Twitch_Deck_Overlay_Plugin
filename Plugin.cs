@@ -7,16 +7,19 @@ using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using TwitchDeckOverlay.UI;
 using TwitchDeckOverlay.Config;
+using TwitchDeckOverlay.Services;
 
 namespace TwitchDeckOverlay
 {
     public class Plugin : IPlugin
     {
-        private OverlayView _overlay;
+        private ImprovedOverlayView _overlay;
         private TwitchDeckManager _deckManager;
         private readonly PluginConfig _config;
         private MenuItem _menuItem;
         private DispatcherTimer _healthCheckTimer;
+        
+
 
         public string Name => "Twitch Deck Overlay";
         public string Description => "Displays decks shared in a Twitch chat";
@@ -39,9 +42,13 @@ namespace TwitchDeckOverlay
         {
             _deckManager = new TwitchDeckManager(_config, Core.OverlayCanvas, null);
 
-            _overlay = new OverlayView(_deckManager);
+            _overlay = new ImprovedOverlayView(_deckManager);
             _deckManager.SetOverlayView(_overlay);
 
+            // Встановлюємо позицію основного вікна з конфігурації
+            Canvas.SetLeft(_overlay, _config.OverlayWindowLeft);
+            Canvas.SetTop(_overlay, _config.OverlayWindowTop);
+            
             Core.OverlayCanvas.Children.Add(_overlay);
 
             _deckManager.Initialize();
@@ -49,7 +56,9 @@ namespace TwitchDeckOverlay
             // Запускаємо періодичну перевірку здоров'я підключення
             StartHealthCheckTimer();
             
-            Log.Info("TwitchDeckOverlay plugin loaded");
+            Log.Info("TwitchDeckOverlay plugin loaded with card list functionality");
+            
+
         }
 
         public void OnUnload()
@@ -57,7 +66,11 @@ namespace TwitchDeckOverlay
             _healthCheckTimer?.Stop();
             _healthCheckTimer = null;
             _deckManager.Shutdown();
+            
             Core.OverlayCanvas.Children.Remove(_overlay);
+            
+
+            
             Log.Info("TwitchDeckOverlay plugin unloaded");
         }
 
@@ -85,6 +98,7 @@ namespace TwitchDeckOverlay
 
         public void OnUpdate()
         {
+
         }
 
         private void StartHealthCheckTimer()
@@ -107,7 +121,8 @@ namespace TwitchDeckOverlay
             _healthCheckTimer.Start();
             Log.Info("Health check timer started (15 minute intervals)");
         }
-        
+
+
 
     }
 }
