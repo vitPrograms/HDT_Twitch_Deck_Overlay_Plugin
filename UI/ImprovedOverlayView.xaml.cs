@@ -12,6 +12,7 @@ using Hearthstone_Deck_Tracker.Utility;
 using Hearthstone_Deck_Tracker.API;
 using TwitchDeckOverlay.Models;
 using TwitchDeckOverlay.Config;
+using TwitchDeckOverlay.Services;
 
 namespace TwitchDeckOverlay.UI
 {
@@ -96,6 +97,104 @@ namespace TwitchDeckOverlay.UI
                 ToggleCollapse();
             }
         }
+        
+        private async Task LoadOnlineStatisticsAsync(DeckInfo deckInfo)
+        {
+            Log.Info($"LoadOnlineStatisticsAsync called for deck: {deckInfo.Author}");
+            Log.Info($"FetchOnlineStatisticsEnabled: {PluginConfig.Instance.FetchOnlineStatisticsEnabled}");
+            Log.Info($"DeckCode: {deckInfo.DeckCode}");
+            
+            if (!PluginConfig.Instance.FetchOnlineStatisticsEnabled || string.IsNullOrEmpty(deckInfo.DeckCode))
+            {
+                Log.Info("LoadOnlineStatisticsAsync: Skipping - disabled or no deck code");
+                return;
+            }
+
+            try
+            {
+                Log.Info("LoadOnlineStatisticsAsync: Calling HSGuruService...");
+                var onlineStats = await HSGuruService.GetDeckStatisticsAsync(deckInfo.DeckCode);
+                
+                if (onlineStats != null)
+                {
+                    Log.Info($"LoadOnlineStatisticsAsync: Got stats - WinRate: {onlineStats.WinRate}%, Games: {onlineStats.TotalGames}");
+                    deckInfo.OnlineStats = onlineStats;
+                    
+                    // Якщо є назва колоди з HSGuru, використовуємо її
+                    if (!string.IsNullOrEmpty(onlineStats.DeckName))
+                    {
+                        Log.Info($"LoadOnlineStatisticsAsync: Updating deck title to: {onlineStats.DeckName}");
+                        Dispatcher.Invoke(() => {
+                            DetailsDeckTitle.Text = onlineStats.DeckName;
+                            HSGuruLogoTitle.Visibility = Visibility.Visible;
+                        });
+                    }
+                    
+                    // Оновлюємо UI в головному потоці
+                    Dispatcher.Invoke(() => {
+                        UpdateOnlineStatisticsUI(deckInfo);
+                        // Оновлюємо іконку архетипу після отримання онлайн статистики
+                        UpdateArchetypeIcon(deckInfo);
+                    });
+                }
+                else
+                {
+                    Log.Info("LoadOnlineStatisticsAsync: No stats returned from HSGuruService");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"ImprovedOverlayView: Error loading online statistics: {ex.Message}");
+            }
+        }
+        
+        private void ClearOnlineStatisticsUI()
+        {
+            Log.Info("ClearOnlineStatisticsUI: Clearing online statistics display");
+            
+            // Очищуємо відображення онлайн статистики
+            DetailsWinRate.Text = "--%";
+            DetailsTotalGames.Text = "--";
+            
+            // Ховаємо HSGuru логотипи
+            HSGuruLogoWinRate.Visibility = Visibility.Collapsed;
+            HSGuruLogoGames.Visibility = Visibility.Collapsed;
+            HSGuruLogoTitle.Visibility = Visibility.Collapsed;
+        }
+
+        private void UpdateOnlineStatisticsUI(DeckInfo deckInfo)
+        {
+            if (deckInfo != _currentDeckDetails || deckInfo.OnlineStats == null)
+            {
+                Log.Info("UpdateOnlineStatisticsUI: Skipping - deck not current or no stats");
+                return;
+            }
+
+            Log.Info($"UpdateOnlineStatisticsUI: Updating UI for deck {deckInfo.Author} with winrate {deckInfo.OnlineStats.WinRate}%");
+
+            // Показуємо винрейт якщо є дані (включаючи 0% винрейт, якщо є ігри)
+            if (deckInfo.OnlineStats.WinRate >= 0 && deckInfo.OnlineStats.TotalGames > 0)
+            {
+                DetailsWinRate.Text = $"{deckInfo.OnlineStats.WinRate:F1}%";
+                DetailsTotalGames.Text = deckInfo.OnlineStats.TotalGames.ToString();
+                
+                // Показуємо HSGuru логотипи для онлайн статистики
+                HSGuruLogoWinRate.Visibility = Visibility.Visible;
+                HSGuruLogoGames.Visibility = Visibility.Visible;
+                
+                Log.Info($"UpdateOnlineStatisticsUI: Updated stats - WinRate: {deckInfo.OnlineStats.WinRate:F1}%, Games: {deckInfo.OnlineStats.TotalGames}");
+            }
+            else
+            {
+                Log.Info("UpdateOnlineStatisticsUI: No valid online stats data");
+                DetailsWinRate.Text = "--%";
+                DetailsTotalGames.Text = "--";
+                
+                // Ховаємо HSGuru логотипи
+                HSGuruLogoWinRate.Visibility = Visibility.Collapsed;
+                HSGuruLogoGames.Visibility = Visibility.Collapsed;
+            }
+        }
 
         private async Task InitializeCollectionCacheAsync()
         {
@@ -142,43 +241,55 @@ namespace TwitchDeckOverlay.UI
                 else
                 {
                     // Якщо колекція ще не завантажена - показуємо повідомлення
-                    DetailsTotalDustCost.Text = "Loading...";
-                    DetailsDustNeeded.Text = "Loading...";
+                    DetailsDustCost.Text = "Loading...";
                     
                     // Асинхронно завантажуємо колекцію і підраховуємо
                     _ = CalculateDustCostsAsync(deckInfo);
                 }
                 
                 // Оновлюємо інформацію в панелі деталей
-                DetailsTitle.Text = $"Deck: {deckInfo.Author}";
+                DetailsDeckTitle.Text = $"Deck: {deckInfo.Author}";
                 
-                // Встановлюємо іконку класу (використовуємо правильні іконки класів замість арту героя)
+                // Оновлюємо режим гри з нормалізацією
+                DetailsMode.Text = NormalizeGameMode(deckInfo.Mode);
+                
+                // Встановлюємо іконку класу
                 try
                 {
-                    var classIcon = ImageCache.GetClassIcon(deckInfo.Class);
-                    if (classIcon != null)
+                    // Спробуємо отримати іконку класу з HDT
+                    var heroCard = Hearthstone_Deck_Tracker.Hearthstone.Database.GetHeroCardFromClass(deckInfo.Class);
+                    if (heroCard != null)
                     {
-                        DetailsClassIcon.Source = classIcon;
-                        DetailsClassIconText.Visibility = Visibility.Collapsed;
+                        var heroImage = ImageCache.GetClassIcon(heroCard.PlayerClass);
+                        Log.Info($"ImprovedOverlayView: Class icon loading removed - using archetype icon instead");
                     }
                     else
                     {
-                        DetailsClassIcon.Source = null;
-                        DetailsClassIconText.Text = deckInfo.Class.Substring(0, 1).ToUpper();
-                        DetailsClassIconText.Visibility = Visibility.Visible;
+                        Log.Debug($"ImprovedOverlayView: No hero card found for {deckInfo.Class}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.Warn($"ImprovedOverlayView: Could not load class icon for {deckInfo.Class}: {ex.Message}");
-                    DetailsClassIcon.Source = null;
-                    DetailsClassIconText.Text = deckInfo.Class.Substring(0, 1).ToUpper();
-                    DetailsClassIconText.Visibility = Visibility.Visible;
+                    Log.Debug($"ImprovedOverlayView: Class icon loading skipped: {ex.Message}");
                 }
                 
                 DetailsClass.Text = deckInfo.Class;
-                DetailsMode.Text = deckInfo.Mode;
-                DetailsCardCount.Text = deckInfo.Cards.Count.ToString();
+                DetailsMode.Text = NormalizeGameMode(deckInfo.Mode);
+                
+                // Оновлюємо іконку архетипу
+                UpdateArchetypeIcon(deckInfo);
+                
+                // Очищуємо онлайн статистику при зміні колоди
+                ClearOnlineStatisticsUI();
+                
+                // Оновлюємо додаткову статистику
+                DetailsLegendaryCount.Text = deckInfo.Statistics.LegendaryCards.ToString();
+                
+                // Створюємо графік мани
+                CreateManaCurve(deckInfo);
+                
+                // Завантажуємо онлайн статистику асинхронно
+                _ = LoadOnlineStatisticsAsync(deckInfo);
                 // Значення будуть оновлені асинхронно в CalculateDustCostsAsync
                 
                 // Сортуємо карти по мані, потім по назві
@@ -294,8 +405,7 @@ namespace TwitchDeckOverlay.UI
                     // Оновлюємо UI
                     Dispatcher.Invoke(() =>
                     {
-                        DetailsTotalDustCost.Text = totalDustCost.ToString();
-                        DetailsDustNeeded.Text = "N/A";
+                        DetailsDustCost.Text = totalDustCost.ToString();
                     });
                     return;
                 }
@@ -314,10 +424,7 @@ namespace TwitchDeckOverlay.UI
                     int cardTotalCost = dustCost * cardInfo.Count;
                     totalDustCostCalculated += cardTotalCost;
 
-                    // Детальне логування для кожної карти
-                    Log.Info($"Card: {cardInfo.Name} (ID: {dbfId})");
-                    Log.Info($"  Rarity: {cardInfo.RarityId}, Set: {cardInfo.CardSetId}, Count: {cardInfo.Count}");
-                    Log.Info($"  Dust per card: {dustCost}, Total for {cardInfo.Count}x: {cardTotalCost}");
+
 
                     if (!_collectionCache.TryGetValue(dbfId, out int ownedCount) || ownedCount < cardInfo.Count)
                     {
@@ -326,19 +433,16 @@ namespace TwitchDeckOverlay.UI
                         int cardDustNeeded = dustCost * missingCount;
                         dustNeeded += cardDustNeeded;
                         
-                        Log.Info($"  MISSING: Owned {ownedCount}, Need {cardInfo.Count}, Missing {missingCount}");
-                        Log.Info($"  Dust needed for this card: {cardDustNeeded}");
+
                     }
                     else
                     {
                         cardInfo.IsMissingInCollection = false;
-                        Log.Info($"  OWNED: Have {ownedCount}, need {cardInfo.Count} - OK");
                     }
 
                     // Обробляємо компоненти карт (якщо є)
                     if (cardInfo.HasComponents)
                     {
-                        Log.Info($"  Card has {cardInfo.Components.Count} components:");
                         
                         if (!cardInfo.IsMissingInCollection)
                         {
@@ -347,8 +451,6 @@ namespace TwitchDeckOverlay.UI
                                 int componentDustCost = GetCraftingCost(component.RarityId, component.CardSetId);
                                 int componentTotalCost = componentDustCost * component.Count;
                                 totalDustCostCalculated += componentTotalCost;
-                                
-                                Log.Info($"    Component: {component.Name} - {componentDustCost} dust x{component.Count} = {componentTotalCost}");
                             }
                             continue;
                         }
@@ -362,9 +464,7 @@ namespace TwitchDeckOverlay.UI
                             int componentDbfId = component.Id;
                             int componentOwnedCount = 0;
                             bool isMissing = !_collectionCache.TryGetValue(componentDbfId, out componentOwnedCount) || componentOwnedCount < component.Count;
-                            
-                            Log.Info($"    Component: {component.Name} (ID: {componentDbfId})");
-                            Log.Info($"      Dust per card: {componentDustCost}, Total: {componentTotalCost}");
+
                             
                             if (isMissing)
                             {
@@ -372,19 +472,11 @@ namespace TwitchDeckOverlay.UI
                                 int componentDustNeeded = componentDustCost * missingCount;
                                 dustNeeded += componentDustNeeded;
                                 
-                                Log.Info($"      MISSING: Owned {componentOwnedCount}, Need {component.Count}, Missing {missingCount}");
-                                Log.Info($"      Dust needed: {componentDustNeeded}");
-                            }
-                            else
-                            {
-                                Log.Info($"      OWNED: Have {componentOwnedCount}, need {component.Count} - OK");
                             }
                         }
                     }
                     
-                    Log.Info($"  Running total dust cost: {totalDustCostCalculated}");
-                    Log.Info($"  Running dust needed: {dustNeeded}");
-                    Log.Info("---");
+
                 }
 
                 deckInfo.DustNeeded = dustNeeded;
@@ -394,15 +486,24 @@ namespace TwitchDeckOverlay.UI
                 Log.Info("=== DUST CALCULATION SUMMARY ===");
                 Log.Info($"TOTAL DUST COST: {totalDustCostCalculated}");
                 Log.Info($"DUST NEEDED: {dustNeeded}");
-                Log.Info($"Expected total dust cost: 6680 (for comparison)");
-                Log.Info($"Difference: {totalDustCostCalculated - 6680}");
                 Log.Info("=== END SUMMARY ===");
 
                 // Оновлюємо UI в головному потоці
                 Dispatcher.Invoke(() =>
                 {
-                    DetailsTotalDustCost.Text = totalDustCostCalculated.ToString();
-                    DetailsDustNeeded.Text = dustNeeded.ToString();
+                    DetailsDustCost.Text = totalDustCostCalculated.ToString();
+                    
+                    // Показуємо інформацію про недостачу пилу
+                    if (dustNeeded > 0)
+                    {
+                        DetailsDustNeeded.Text = $"(-{dustNeeded})";
+                        DetailsDustNeeded.Visibility = Visibility.Visible;
+                        DetailsDustNeeded.ToolTip = $"Need {dustNeeded} more dust to craft this deck";
+                    }
+                    else
+                    {
+                        DetailsDustNeeded.Visibility = Visibility.Collapsed;
+                    }
                 });
 
 
@@ -424,8 +525,8 @@ namespace TwitchDeckOverlay.UI
                 
                 Dispatcher.Invoke(() =>
                 {
-                    DetailsTotalDustCost.Text = fallbackTotal.ToString();
-                    DetailsDustNeeded.Text = "Error";
+                    DetailsDustCost.Text = fallbackTotal.ToString();
+                    DetailsDustNeeded.Visibility = Visibility.Collapsed;
                 });
             }
         }
@@ -443,8 +544,19 @@ namespace TwitchDeckOverlay.UI
                 // Після завершення обчислень оновлюємо UI, тільки якщо ще показуємо ті ж деталі
                 if (_currentDeckDetails == deckInfo && DetailsPanel.Visibility == Visibility.Visible)
                 {
-                    DetailsTotalDustCost.Text = deckInfo.TotalDustCost.ToString();
-                    DetailsDustNeeded.Text = deckInfo.DustNeeded.ToString();
+                    DetailsDustCost.Text = deckInfo.TotalDustCost.ToString();
+                    
+                    // Показуємо інформацію про недостачу пилу
+                    if (deckInfo.DustNeeded > 0)
+                    {
+                        DetailsDustNeeded.Text = $"(-{deckInfo.DustNeeded})";
+                        DetailsDustNeeded.Visibility = Visibility.Visible;
+                        DetailsDustNeeded.ToolTip = $"Need {deckInfo.DustNeeded} more dust to craft this deck";
+                    }
+                    else
+                    {
+                        DetailsDustNeeded.Visibility = Visibility.Collapsed;
+                    }
                 }
             }
             catch (Exception ex)
@@ -452,8 +564,8 @@ namespace TwitchDeckOverlay.UI
                 Log.Error($"ImprovedOverlayView: Error in CalculateDustCostsAsync: {ex.Message}");
                 if (_currentDeckDetails == deckInfo && DetailsPanel.Visibility == Visibility.Visible)
                 {
-                    DetailsTotalDustCost.Text = "-";
-                    DetailsDustNeeded.Text = "-";
+                    DetailsDustCost.Text = "-";
+                    DetailsDustNeeded.Visibility = Visibility.Collapsed;
                 }
             }
         }
@@ -639,7 +751,7 @@ namespace TwitchDeckOverlay.UI
 
         }
 
-        private async void CopyDeckCodeDetails_Click(object sender, RoutedEventArgs e)
+        private async void CopyDeckCodeDetails_Click(object sender, MouseButtonEventArgs e)
         {
             if (_currentDeckDetails != null && !string.IsNullOrEmpty(_currentDeckDetails.DeckCode))
             {
@@ -679,14 +791,427 @@ namespace TwitchDeckOverlay.UI
             }
         }
 
-        private void RemoveDeckDetails_Click(object sender, RoutedEventArgs e)
+        private void RemoveDeckDetails_Click(object sender, MouseButtonEventArgs e)
         {
             if (_currentDeckDetails != null)
             {
                 _deckManager.Decks.Remove(_currentDeckDetails);
                 DetailsPanel.Visibility = Visibility.Collapsed;
+                CardListColumn.Visibility = Visibility.Collapsed;
                 _currentDeckDetails = null;
+                
+                // Update visual state of all deck items
+                UpdateAllDeckItemsVisualState();
+            }
+        }
 
+        private void CreateManaCurve(DeckInfo deckInfo)
+        {
+            try
+            {
+                ManaCurveCanvas.Children.Clear();
+                
+                // Підраховуємо карти по мані (0-7+)
+                var manaCounts = new int[8]; // 0, 1, 2, 3, 4, 5, 6, 7+
+                
+                foreach (var card in deckInfo.Cards)
+                {
+                    int manaSlot = Math.Min(card.Cost, 7);
+                    manaCounts[manaSlot] += card.Count;
+                }
+                
+                // Знаходимо максимум для масштабування
+                int maxCount = manaCounts.Max();
+                if (maxCount == 0) return;
+                
+                double canvasWidth = ManaCurveCanvas.Width;
+                double canvasHeight = ManaCurveCanvas.Height;
+                double barWidth = (canvasWidth - 16) / 8; // 8 стовпців з відступами
+                double maxBarHeight = canvasHeight - 20; // Залишаємо місце для підписів
+                
+                for (int i = 0; i < 8; i++)
+                {
+                    double barHeight = (double)manaCounts[i] / maxCount * maxBarHeight;
+                    double x = i * barWidth + 2;
+                    double y = canvasHeight - barHeight - 15;
+                    
+                    // Створюємо стовпець
+                    var rect = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = barWidth - 2,
+                        Height = barHeight,
+                        Fill = new SolidColorBrush(Color.FromArgb(255, 100, 149, 237)), // Синій колір
+                        Stroke = new SolidColorBrush(Color.FromArgb(255, 70, 130, 180)),
+                        StrokeThickness = 1
+                    };
+                    
+                    Canvas.SetLeft(rect, x);
+                    Canvas.SetTop(rect, y);
+                    ManaCurveCanvas.Children.Add(rect);
+                    
+                    // Додаємо підпис мани
+                    var manaLabel = new TextBlock
+                    {
+                        Text = i == 7 ? "7+" : i.ToString(),
+                        FontSize = 8,
+                        Foreground = new SolidColorBrush(Colors.LightGray),
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+                    
+                    Canvas.SetLeft(manaLabel, x + (barWidth - 2) / 2 - 4);
+                    Canvas.SetTop(manaLabel, canvasHeight - 12);
+                    ManaCurveCanvas.Children.Add(manaLabel);
+                    
+                    // Додаємо кількість карт над стовпцем, якщо є
+                    if (manaCounts[i] > 0)
+                    {
+                        var countLabel = new TextBlock
+                        {
+                            Text = manaCounts[i].ToString(),
+                            FontSize = 8,
+                            Foreground = new SolidColorBrush(Colors.White),
+                            FontWeight = FontWeights.Bold,
+                            HorizontalAlignment = HorizontalAlignment.Center
+                        };
+                        
+                        Canvas.SetLeft(countLabel, x + (barWidth - 2) / 2 - 4);
+                        Canvas.SetTop(countLabel, y - 12);
+                        ManaCurveCanvas.Children.Add(countLabel);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"ImprovedOverlayView: Error creating mana curve: {ex.Message}");
+            }
+        }
+
+        private void MatchupsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_currentDeckDetails?.OnlineStats?.ClassMatchups == null || 
+                    _currentDeckDetails.OnlineStats.ClassMatchups.Count == 0)
+                {
+                    return;
+                }
+
+                // Створюємо вікно з матчапами
+                var matchupsWindow = new Window
+                {
+                    Title = "Class Matchups",
+                    Width = 300,
+                    Height = 400,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = Application.Current.MainWindow,
+                    Background = new SolidColorBrush(Color.FromArgb(255, 30, 30, 30)),
+                    ResizeMode = ResizeMode.NoResize
+                };
+
+                var scrollViewer = new ScrollViewer
+                {
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Padding = new Thickness(10)
+                };
+
+                var stackPanel = new StackPanel();
+
+                // Заголовок
+                var titleBlock = new TextBlock
+                {
+                    Text = "Class Matchups",
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Colors.White),
+                    Margin = new Thickness(0, 0, 0, 10),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                stackPanel.Children.Add(titleBlock);
+
+                // Сортуємо матчапи по винрейту (найкращі зверху)
+                var sortedMatchups = _currentDeckDetails.OnlineStats.ClassMatchups
+                    .OrderByDescending(kvp => kvp.Value)
+                    .ToList();
+
+                foreach (var matchup in sortedMatchups)
+                {
+                    var border = new Border
+                    {
+                        Background = new SolidColorBrush(Color.FromArgb(255, 45, 45, 45)),
+                        CornerRadius = new CornerRadius(4),
+                        Padding = new Thickness(10, 6, 10, 6),
+                        Margin = new Thickness(0, 2, 0, 2)
+                    };
+
+                    var grid = new Grid();
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                    var classText = new TextBlock
+                    {
+                        Text = matchup.Key,
+                        Foreground = new SolidColorBrush(Colors.White),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    Grid.SetColumn(classText, 0);
+
+                    var winRateText = new TextBlock
+                    {
+                        Text = $"{matchup.Value:F1}%",
+                        FontWeight = FontWeights.Bold,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+
+                    // Колір залежно від винрейту
+                    if (matchup.Value >= 60)
+                        winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 76, 175, 80)); // Зелений
+                    else if (matchup.Value >= 50)
+                        winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 193, 7)); // Жовтий
+                    else
+                        winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 244, 67, 54)); // Червоний
+
+                    Grid.SetColumn(winRateText, 1);
+
+                    grid.Children.Add(classText);
+                    grid.Children.Add(winRateText);
+                    border.Child = grid;
+                    stackPanel.Children.Add(border);
+                }
+
+                scrollViewer.Content = stackPanel;
+                matchupsWindow.Content = scrollViewer;
+                matchupsWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"ImprovedOverlayView: Error showing matchups: {ex.Message}");
+            }
+        }
+
+        private void MatchupsButton_MouseEnter(object sender, MouseEventArgs e)
+        {
+            try
+            {
+                if (_currentDeckDetails?.OnlineStats?.ClassMatchups == null || 
+                    _currentDeckDetails.OnlineStats.ClassMatchups.Count == 0)
+                {
+                    return;
+                }
+
+                // Очищуємо попередній контент tooltip
+                MatchupsTooltipContent.Children.Clear();
+
+                // Заголовок
+                var titleBlock = new TextBlock
+                {
+                    Text = "Class Matchups",
+                    FontSize = 12,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Colors.White),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 0, 0, 8)
+                };
+                MatchupsTooltipContent.Children.Add(titleBlock);
+
+                // Сортуємо матчапи по винрейту (найкращі зверху)
+                var sortedMatchups = _currentDeckDetails.OnlineStats.ClassMatchups
+                    .OrderByDescending(kvp => kvp.Value)
+                    .ToList();
+
+                foreach (var matchup in sortedMatchups)
+                {
+                    var border = new Border
+                    {
+                        Background = new SolidColorBrush(Color.FromArgb(255, 60, 60, 67)),
+                        CornerRadius = new CornerRadius(3),
+                        Padding = new Thickness(8, 4, 8, 4),
+                        Margin = new Thickness(0, 1, 0, 1)
+                    };
+
+                    var grid = new Grid();
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                    var classText = new TextBlock
+                    {
+                        Text = matchup.Key,
+                        Foreground = new SolidColorBrush(Colors.White),
+                        FontSize = 11,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    Grid.SetColumn(classText, 0);
+
+                    var winRateText = new TextBlock
+                    {
+                        Text = $"{matchup.Value:F1}%",
+                        FontSize = 11,
+                        FontWeight = FontWeights.Bold,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+
+                    // Кольорове кодування винрейту
+                    if (matchup.Value >= 60)
+                    {
+                        winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 111, 207, 151)); // Зелений
+                        border.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 111, 207, 151));
+                    }
+                    else if (matchup.Value >= 50)
+                    {
+                        winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 242, 201, 76)); // Жовтий
+                        border.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 242, 201, 76));
+                    }
+                    else
+                    {
+                        winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 235, 87, 87)); // Червоний
+                        border.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 235, 87, 87));
+                    }
+
+                    border.BorderThickness = new Thickness(1);
+                    Grid.SetColumn(winRateText, 1);
+
+                    grid.Children.Add(classText);
+                    grid.Children.Add(winRateText);
+                    border.Child = grid;
+                    MatchupsTooltipContent.Children.Add(border);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"ImprovedOverlayView: Error updating matchups tooltip: {ex.Message}");
+            }
+        }
+
+        private void MatchupsButton_MouseLeave(object sender, MouseEventArgs e)
+        {
+            // Tooltip автоматично зникне
+        }
+
+        private string NormalizeGameMode(string mode)
+        {
+            if (string.IsNullOrEmpty(mode))
+                return mode;
+                
+            switch (mode.ToUpper())
+            {
+                case "FT_STANDARD":
+                    return "STANDARD";
+                case "FT_WILD":
+                    return "WILD";
+                case "FT_CLASSIC":
+                    return "CLASSIC";
+                case "FT_TWIST":
+                    return "TWIST";
+                default:
+                    return mode; // Повертаємо як є, якщо не знайдено відповідності
+            }
+        }
+
+        private void UpdateArchetypeIcon(DeckInfo deckInfo)
+        {
+            try
+            {
+                // Визначаємо іконку залежно від архетипу колоди
+                string icon = "⚡"; // За замовчуванням
+                string tooltip = "Deck Archetype";
+                string archetypeText = "";
+                
+                // Спочатку перевіряємо чи є дані з HSGuru про архетип
+                if (deckInfo.OnlineStats?.ArchetypeCategory != null)
+                {
+                    var category = deckInfo.OnlineStats.ArchetypeCategory;
+                    switch (category.ToLower())
+                    {
+                        case "aggro":
+                            icon = "⚔️";
+                            tooltip = "Aggro Deck";
+                            archetypeText = "Aggro";
+                            break;
+                        case "control":
+                            icon = "🛡️";
+                            tooltip = "Control Deck";
+                            archetypeText = "Control";
+                            break;
+                        case "control/combo":
+                            icon = "🎯";
+                            tooltip = "Control/Combo Deck";
+                            archetypeText = "Control/Combo";
+                            break;
+                        case "midrange":
+                            icon = "⚖️";
+                            tooltip = "Midrange Deck";
+                            archetypeText = "Midrange";
+                            break;
+                    }
+                    
+                    if (deckInfo.OnlineStats.AverageTurns > 0)
+                    {
+                        tooltip += $" (Avg: {deckInfo.OnlineStats.AverageTurns:F1} turns)";
+                    }
+                }
+                else
+                {
+                    // Fallback до старого методу на основі назви автора
+                    var deckName = deckInfo.Author.ToLower();
+                    
+                    if (deckName.Contains("aggro") || deckName.Contains("face"))
+                    {
+                        icon = "⚔️";
+                        tooltip = "Aggro Deck";
+                    }
+                    else if (deckName.Contains("control"))
+                    {
+                        icon = "🛡️";
+                        tooltip = "Control Deck";
+                    }
+                    else if (deckName.Contains("combo"))
+                    {
+                        icon = "🎯";
+                        tooltip = "Combo Deck";
+                    }
+                    else if (deckName.Contains("midrange"))
+                    {
+                        icon = "⚖️";
+                        tooltip = "Midrange Deck";
+                    }
+                    else if (deckName.Contains("tempo"))
+                    {
+                        icon = "💨";
+                        tooltip = "Tempo Deck";
+                    }
+                    else if (deckName.Contains("ramp"))
+                    {
+                        icon = "📈";
+                        tooltip = "Ramp Deck";
+                    }
+                    else if (deckName.Contains("otk") || deckName.Contains("one turn kill"))
+                    {
+                        icon = "💥";
+                        tooltip = "OTK Deck";
+                    }
+                }
+                
+                DetailsArchetype.Text = icon;
+                DetailsArchetype.ToolTip = tooltip;
+                
+                // Оновлюємо текст архетипу під іконкою
+                if (!string.IsNullOrEmpty(archetypeText))
+                {
+                    DetailsArchetypeText.Text = archetypeText;
+                    DetailsArchetypeText.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    DetailsArchetypeText.Visibility = Visibility.Collapsed;
+                }
+                
+                Log.Debug($"ImprovedOverlayView: Set archetype icon {icon} ({archetypeText}) for deck {deckInfo.Author}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"ImprovedOverlayView: Error updating archetype icon: {ex.Message}");
+                DetailsArchetype.Text = "⚡";
+                DetailsArchetype.ToolTip = "Deck Archetype";
+                DetailsArchetypeText.Visibility = Visibility.Collapsed;
             }
         }
     }

@@ -268,6 +268,9 @@ namespace TwitchDeckOverlay.Services
                     CheckCardsInCollection(deckInfo);
                 }
 
+                // Розраховуємо статистику колоди
+                deckInfo.Statistics.CalculateFromCards(deckInfo.Cards);
+
                 return deckInfo;
             }
             catch (Exception ex)

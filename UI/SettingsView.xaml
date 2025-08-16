@@ -1,142 +1,321 @@
-﻿<Window x:Class="TwitchDeckOverlay.UI.SettingsView"
+<Window x:Class="TwitchDeckOverlay.UI.SettingsView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
         mc:Ignorable="d" 
         Title="TwitchDeckOverlay Settings" 
-        Height="450" Width="400"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="10">
+        Height="700" Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        MinHeight="600" MinWidth="550">
+    
+    <Window.Resources>
+        <!-- Modern styling resources -->
+        <Style x:Key="ModernGroupBox" TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0,5,0,10"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Background" Value="#FAFAFA"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+        
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+            <Setter Property="Margin" Value="0,15,0,10"/>
+        </Style>
+        
+        <Style x:Key="HelpText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#7F8C8D"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,8"/>
+        </Style>
+        
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#3498DB"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#2980B9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#21618C"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="#95A5A6"/>
+        </Style>
+        
+        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="#E74C3C"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
 
-        <!-- Header -->
-        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" 
-                   Text="TwitchDeckOverlay Settings" 
-                   FontSize="18" FontWeight="Bold" 
-                   Margin="0,0,0,15"/>
+        <!-- Header with Icon -->
+        <Border Grid.Row="0" Background="#34495E" Padding="20,15">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse Width="40" Height="40" Fill="#3498DB" Margin="0,0,15,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="TwitchDeckOverlay Settings" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="White"/>
+                    <TextBlock Text="Configure your plugin preferences" 
+                               FontSize="12" 
+                               Foreground="#BDC3C7"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
 
-        <!-- Twitch Channel -->
-        <TextBlock Grid.Row="1" Grid.Column="0" 
-                   Text="Twitch Channel:" 
-                   VerticalAlignment="Center"
-                   Margin="0,0,10,10"/>
-        <TextBox Grid.Row="1" Grid.Column="1" 
-                 x:Name="TwitchChannelTextBox"
-                 Margin="0,0,0,10"/>
+        <!-- Main Content with TabControl -->
+        <TabControl Grid.Row="1" Margin="15" TabStripPlacement="Top">
+            
+            <!-- General Tab -->
+            <TabItem Header="🔧 General">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- Connection Settings -->
+                        <GroupBox Header="🔗 Connection Settings" Style="{StaticResource ModernGroupBox}">
+                            <StackPanel>
+                                <Label Content="Twitch Channel:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="TwitchChannelTextBox" Margin="0,0,0,5"/>
+                                <TextBlock Text="Enter the Twitch channel name to monitor (without @ symbol)" 
+                                          Style="{StaticResource HelpText}"/>
+                                
+                                <Label Content="Streamer Nickname (Display):" FontWeight="SemiBold" Margin="0,10,0,0"/>
+                                <TextBox x:Name="TwitchChannelNicknameTextBox" Margin="0,0,0,5"/>
+                                <TextBlock Text="Custom display name for the streamer (optional)" 
+                                          Style="{StaticResource HelpText}"/>
+                            </StackPanel>
+                        </GroupBox>
 
-        <!-- Help text for Twitch Channel -->
-        <TextBlock Grid.Row="2" Grid.Column="1" 
-                   Text="Enter the Twitch channel name to monitor (without the @ symbol)"
-                   TextWrapping="Wrap" 
-                   Foreground="Gray" 
-                   FontStyle="Italic"
-                   Margin="0,0,0,15"/>
+                        <!-- API Settings -->
+                        <GroupBox Header="🔑 API Configuration" Style="{StaticResource ModernGroupBox}">
+                            <StackPanel>
+                                <Label Content="Blizzard Bearer Token:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="BlizzardTokenTextBox" Margin="0,0,0,5"/>
+                                <TextBlock Text="Enter your Blizzard API bearer token. Generate one at https://develop.battle.net/" 
+                                          Style="{StaticResource HelpText}"/>
+                            </StackPanel>
+                        </GroupBox>
 
-        <!-- Blizzard API Credentials Section -->
-        <TextBlock Grid.Row="3" Grid.Column="0" 
-                   Text="Blizzard Bearer Token:" 
-                   VerticalAlignment="Center"
-                   Margin="0,0,10,10"/>
-        <TextBox Grid.Row="3" Grid.Column="1" 
-                 x:Name="BlizzardTokenTextBox"
-                 Margin="0,0,0,10"/>
+                        <!-- Collection Settings -->
+                        <GroupBox Header="💎 Collection &amp; Dust" Style="{StaticResource ModernGroupBox}">
+                            <StackPanel>
+                                <CheckBox x:Name="CheckCardsInCollectionCheckBox"
+                                         Content="Check Cards in Collection"
+                                         IsChecked="{Binding CheckCardsInCollectionEnabled}"
+                                         Margin="0,0,0,8"/>
+                                
+                                <CheckBox x:Name="CalculateTotalDustCostCheckBox"
+                                         Content="Calculate Total Deck Cost"
+                                         IsChecked="{Binding CalculateTotalDustCostEnabled}"
+                                         IsEnabled="{Binding IsChecked, ElementName=CheckCardsInCollectionCheckBox}"
+                                         Margin="20,0,0,8"/>
+                                
+                                <CheckBox x:Name="CalculateDustNeededCheckBox"
+                                         Content="Calculate Dust Needed for Missing Cards"
+                                         IsChecked="{Binding CalculateDustNeededEnabled}"
+                                         IsEnabled="{Binding IsChecked, ElementName=CheckCardsInCollectionCheckBox}"
+                                         Margin="20,0,0,8"/>
+                                
+                                <CheckBox x:Name="ShowFocusWindowOnCopyCheckBox"
+                                         Content="Show Focus Window on Deck Code Copy"
+                                         IsChecked="{Binding ShowFocusWindowOnCopyEnabled}"
+                                         Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
 
-        <!-- Help text for API token -->
-        <TextBlock Grid.Row="4" Grid.Column="1" 
-                   Text="Enter your Blizzard API bearer token. You can generate one at https://develop.battle.net/"
-                   TextWrapping="Wrap" 
-                   Foreground="Gray" 
-                   FontStyle="Italic"
-                   Margin="0,0,0,15"/>
+                        <!-- Interface Settings -->
+                        <GroupBox Header="🎨 Interface" Style="{StaticResource ModernGroupBox}">
+                            <StackPanel>
+                                <Label Content="Maximum Decks in List:" FontWeight="SemiBold"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox x:Name="MaxDecksInListTextBox" 
+                                            Width="80" 
+                                            Text="{Binding MaxDecksInList}"
+                                            Margin="0,0,10,0"/>
+                                    <TextBlock Text="(Recommended: 5-15)" 
+                                              VerticalAlignment="Center" 
+                                              Style="{StaticResource HelpText}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-        <!-- Check Cards in Collection -->
-        <CheckBox Grid.Row="5" Grid.Column="1" 
-                  x:Name="CheckCardsInCollectionCheckBox"
-                  Content="Check Cards in Collection"
-                  IsChecked="{Binding CheckCardsInCollectionEnabled}"
-                  Margin="0,0,0,10"/>
+            <!-- HSGuru Tab -->
+            <TabItem Header="📊 HSGuru">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- HSGuru Main Settings -->
+                        <GroupBox Header="📈 Online Statistics" Style="{StaticResource ModernGroupBox}">
+                            <StackPanel>
+                                <CheckBox x:Name="FetchOnlineStatisticsCheckBox"
+                                         Content="Enable HSGuru Online Statistics"
+                                         IsChecked="{Binding FetchOnlineStatisticsEnabled}"
+                                         FontWeight="SemiBold"
+                                         Margin="0,0,0,15"/>
+                                
+                                <TextBlock Text="Data Sources:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                
+                                <CheckBox x:Name="FetchWinRateAndGamesCheckBox"
+                                         Content="📊 Win Rate and Games Count"
+                                         IsChecked="{Binding FetchWinRateAndGamesEnabled}"
+                                         IsEnabled="{Binding IsChecked, ElementName=FetchOnlineStatisticsCheckBox}"
+                                         Margin="20,0,0,8"/>
+                                
+                                <CheckBox x:Name="FetchArchetypeCheckBox"
+                                         Content="🎯 Deck Archetype Detection"
+                                         IsChecked="{Binding FetchArchetypeEnabled}"
+                                         IsEnabled="{Binding IsChecked, ElementName=FetchOnlineStatisticsCheckBox}"
+                                         Margin="20,0,0,8"/>
+                                
+                                <CheckBox x:Name="FetchMatchupsCheckBox"
+                                         Content="⚔️ Class Matchup Data"
+                                         IsChecked="{Binding FetchMatchupsEnabled}"
+                                         IsEnabled="{Binding IsChecked, ElementName=FetchOnlineStatisticsCheckBox}"
+                                         Margin="20,0,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
 
-        <!-- Calculate Total Dust Cost -->
-        <CheckBox Grid.Row="6" Grid.Column="1" 
-                  x:Name="CalculateTotalDustCostCheckBox"
-                  Content="Calculate Total Deck Cost"
-                  IsChecked="{Binding CalculateTotalDustCostEnabled}"
-                  IsEnabled="{Binding IsChecked, ElementName=CheckCardsInCollectionCheckBox}"
-                  Margin="0,0,0,10"/>
+                        <!-- HSGuru Filters -->
+                        <GroupBox Header="🔍 Search Filters" Style="{StaticResource ModernGroupBox}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <Label Grid.Row="0" Grid.Column="0" Content="Rank Filter:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Row="0" Grid.Column="1" 
+                                         x:Name="HSGuruRankFilterComboBox"
+                                         IsEnabled="{Binding IsChecked, ElementName=FetchOnlineStatisticsCheckBox}"
+                                         Margin="10,0,0,10">
+                                    <ComboBoxItem Content="All Ranks" Tag="all"/>
+                                    <ComboBoxItem Content="Diamond to Legend" Tag="diamond_to_legend"/>
+                                    <ComboBoxItem Content="Diamond 4-1" Tag="diamond_4to1"/>
+                                    <ComboBoxItem Content="Legend" Tag="legend"/>
+                                    <ComboBoxItem Content="Top 5000" Tag="top_5k"/>
+                                    <ComboBoxItem Content="Top Legend" Tag="top_legend"/>
+                                </ComboBox>
+                                
+                                <Label Grid.Row="1" Grid.Column="0" Content="Time Period:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Row="1" Grid.Column="1" 
+                                         x:Name="HSGuruPeriodFilterComboBox"
+                                         IsEnabled="{Binding IsChecked, ElementName=FetchOnlineStatisticsCheckBox}"
+                                         Margin="10,0,0,10">
+                                    <ComboBoxItem Content="Past Week" Tag="past_week"/>
+                                    <ComboBoxItem Content="Past 3 Days" Tag="past_3_days"/>
+                                    <ComboBoxItem Content="Past Day" Tag="past_day"/>
+                                    <ComboBoxItem Content="Past 6 Hours" Tag="past_6_hours"/>
+                                </ComboBox>
+                                
+                                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" 
+                                          Text="Filters help you get more specific statistics from HSGuru based on rank and time period." 
+                                          Style="{StaticResource HelpText}"/>
+                            </Grid>
+                        </GroupBox>
+                        
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-        <!-- Calculate Dust Needed -->
-        <CheckBox Grid.Row="7" Grid.Column="1" 
-                  x:Name="CalculateDustNeededCheckBox"
-                  Content="Calculate Dust Needed for Missing Cards"
-                  IsChecked="{Binding CalculateDustNeededEnabled}"
-                  IsEnabled="{Binding IsChecked, ElementName=CheckCardsInCollectionCheckBox}"
-                  Margin="0,0,0,10"/>
+            <!-- Advanced Tab -->
+            <TabItem Header="⚙️ Advanced">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- Performance Testing -->
+                        <GroupBox Header="🚀 Performance Testing" Style="{StaticResource ModernGroupBox}">
+                            <StackPanel>
+                                <TextBlock Text="Test plugin performance and memory usage" 
+                                          Style="{StaticResource HelpText}" Margin="0,0,0,10"/>
+                                
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="RunPerformanceTestButton" 
+                                           Content="Run Performance Test" 
+                                           Style="{StaticResource ModernButton}"
+                                           Click="RunPerformanceTestButton_Click"/>
+                                    <Button x:Name="RunMemoryTestButton" 
+                                           Content="Memory Test" 
+                                           Style="{StaticResource SecondaryButton}"
+                                           Click="RunMemoryTestButton_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
 
-        <!-- Show Focus Window on Copy -->
-        <CheckBox Grid.Row="8" Grid.Column="1" 
-                  x:Name="ShowFocusWindowOnCopyCheckBox"
-                  Content="Show Focus Window on Deck Code Copy"
-                  IsChecked="{Binding ShowFocusWindowOnCopyEnabled}"
-                  Margin="0,0,0,15"/>
+                        <!-- Updates -->
+                        <GroupBox Header="🔄 Updates" Style="{StaticResource ModernGroupBox}">
+                            <StackPanel>
+                                <TextBlock Text="Check for plugin updates and new features" 
+                                          Style="{StaticResource HelpText}" Margin="0,0,0,10"/>
+                                
+                                <Button x:Name="CheckUpdatesButton" 
+                                       Content="Check for Updates" 
+                                       Style="{StaticResource ModernButton}"
+                                       Click="CheckUpdatesButton_Click"
+                                       HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+        </TabControl>
 
-        <!-- Performance Testing Section -->
-        <TextBlock Grid.Row="9" Grid.ColumnSpan="2" 
-                   Text="Performance Testing" 
-                   FontSize="14" FontWeight="Bold" 
-                   Margin="0,10,0,10"/>
-
-        <!-- Performance Testing Buttons -->
-        <StackPanel Grid.Row="10" Grid.ColumnSpan="2" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Left"
-                    Margin="0,0,0,15">
-            <Button x:Name="RunPerformanceTestButton" 
-                    Content="Run Performance Test" 
-                    Width="140" Height="25" 
-                    Click="RunPerformanceTestButton_Click"
-                    Margin="0,0,10,0"/>
-            <Button x:Name="RunMemoryTestButton" 
-                    Content="Memory Test" 
-                    Width="100" Height="25" 
-                    Click="RunMemoryTestButton_Click"/>
-        </StackPanel>
-
-        <!-- Save/Cancel buttons -->
-        <StackPanel Grid.Row="11" Grid.Column="0">
-            <Button x:Name="CheckUpdatesButton" Content="Check for updates" 
-            Width="150" Height="25"
-            Click="CheckUpdatesButton_Click"/>
-        </StackPanel>
-        <StackPanel Grid.Row="11" Grid.Column="1" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Right">
-            <Button x:Name="SaveButton" 
-                    Content="Save" 
-                    Width="75" Height="25" 
-                    Click="SaveButton_Click"
-                    Margin="0,0,10,0"/>
-            <Button x:Name="CancelButton" 
-                    Content="Cancel" 
-                    Width="75" Height="25" 
-                    Click="CancelButton_Click"/>
-        </StackPanel>
+        <!-- Bottom Action Bar -->
+        <Border Grid.Row="2" Background="#ECF0F1" Padding="15,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="SaveButton" 
+                       Content="💾 Save Settings" 
+                       Style="{StaticResource ModernButton}"
+                       Click="SaveButton_Click"/>
+                <Button x:Name="CancelButton" 
+                       Content="❌ Cancel" 
+                       Style="{StaticResource SecondaryButton}"
+                       Click="CancelButton_Click"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

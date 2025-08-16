@@ -33,7 +33,7 @@ namespace TwitchDeckOverlay.Models
                 
                 // Додаємо тонкий сірий overlay для приглушення карти
                 var overlayGeometry = new RectangleGeometry(new Rect(0, 0, 217, 34));
-                var overlayBrush = new SolidColorBrush(Color.FromArgb(100, 128, 128, 128)); // #64808080 - сірий з легкою прозорістю
+                var overlayBrush = new SolidColorBrush(Color.FromArgb(100, 32, 32, 32));
                 var overlayDrawing = new GeometryDrawing(overlayBrush, null, overlayGeometry);
                 drawingGroup.Children.Add(overlayDrawing);
                 

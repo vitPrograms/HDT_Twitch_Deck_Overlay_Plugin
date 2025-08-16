@@ -1,9 +1,10 @@
-﻿using System.IO;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System;
 using System.IO.Compression;
 using System.Windows;
+using System.Windows.Controls;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using Newtonsoft.Json.Linq;
 using TwitchDeckOverlay.Config;
@@ -23,11 +24,25 @@ namespace TwitchDeckOverlay.UI
 
             // Load current settings
             TwitchChannelTextBox.Text = _config.TwitchChannel;
+            TwitchChannelNicknameTextBox.Text = _config.TwitchChannelNickname;
             BlizzardTokenTextBox.Text = _config.BlizzardBearerToken;
             CheckCardsInCollectionCheckBox.IsChecked = _config.CheckCardsInCollectionEnabled;
             CalculateTotalDustCostCheckBox.IsChecked = _config.CalculateTotalDustCostEnabled;
             CalculateDustNeededCheckBox.IsChecked = _config.CalculateDustNeededEnabled;
             ShowFocusWindowOnCopyCheckBox.IsChecked = _config.ShowFocusWindowOnCopyEnabled;
+            
+            // HSGuru settings
+            FetchOnlineStatisticsCheckBox.IsChecked = _config.FetchOnlineStatisticsEnabled;
+            FetchWinRateAndGamesCheckBox.IsChecked = _config.FetchWinRateAndGamesEnabled;
+            FetchArchetypeCheckBox.IsChecked = _config.FetchArchetypeEnabled;
+            FetchMatchupsCheckBox.IsChecked = _config.FetchMatchupsEnabled;
+            
+            // HSGuru filters
+            SetComboBoxSelection(HSGuruRankFilterComboBox, _config.HSGuruRankFilter);
+            SetComboBoxSelection(HSGuruPeriodFilterComboBox, _config.HSGuruPeriodFilter);
+            
+            // Interface settings
+            MaxDecksInListTextBox.Text = _config.MaxDecksInList.ToString();
 
             // Встановлюємо DataContext для прив'язки
             DataContext = _config;
@@ -36,19 +51,49 @@ namespace TwitchDeckOverlay.UI
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Save settings
-            _config.TwitchChannel = TwitchChannelTextBox.Text.Trim();
-            _config.BlizzardBearerToken = BlizzardTokenTextBox.Text.Trim();
-            _config.CheckCardsInCollectionEnabled = CheckCardsInCollectionCheckBox.IsChecked ?? true;
-            _config.CalculateTotalDustCostEnabled = CalculateTotalDustCostCheckBox.IsChecked ?? true;
-            _config.CalculateDustNeededEnabled = CalculateDustNeededCheckBox.IsChecked ?? true;
-            _config.ShowFocusWindowOnCopyEnabled = ShowFocusWindowOnCopyCheckBox.IsChecked ?? true;
+            try
+            {
+                // Save basic settings
+                _config.TwitchChannel = TwitchChannelTextBox.Text.Trim();
+                _config.TwitchChannelNickname = TwitchChannelNicknameTextBox.Text.Trim();
+                _config.BlizzardBearerToken = BlizzardTokenTextBox.Text.Trim();
+                _config.CheckCardsInCollectionEnabled = CheckCardsInCollectionCheckBox.IsChecked ?? true;
+                _config.CalculateTotalDustCostEnabled = CalculateTotalDustCostCheckBox.IsChecked ?? true;
+                _config.CalculateDustNeededEnabled = CalculateDustNeededCheckBox.IsChecked ?? true;
+                _config.ShowFocusWindowOnCopyEnabled = ShowFocusWindowOnCopyCheckBox.IsChecked ?? true;
+                
+                // Save HSGuru settings
+                _config.FetchOnlineStatisticsEnabled = FetchOnlineStatisticsCheckBox.IsChecked ?? true;
+                _config.FetchWinRateAndGamesEnabled = FetchWinRateAndGamesCheckBox.IsChecked ?? true;
+                _config.FetchArchetypeEnabled = FetchArchetypeCheckBox.IsChecked ?? true;
+                _config.FetchMatchupsEnabled = FetchMatchupsCheckBox.IsChecked ?? true;
+                
+                // Save HSGuru filters
+                _config.HSGuruRankFilter = GetComboBoxSelection(HSGuruRankFilterComboBox) ?? "all";
+                _config.HSGuruPeriodFilter = GetComboBoxSelection(HSGuruPeriodFilterComboBox) ?? "past_week";
+                
+                // Save interface settings
+                if (int.TryParse(MaxDecksInListTextBox.Text, out int maxDecks) && maxDecks > 0 && maxDecks <= 50)
+                {
+                    _config.MaxDecksInList = maxDecks;
+                }
+                else
+                {
+                    MessageBox.Show("Max decks in list must be a number between 1 and 50.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
 
-            PluginConfig.Save();
-            Log.Info("Settings saved from SettingsView");
+                PluginConfig.Save();
+                Log.Info("Settings saved from SettingsView");
 
-            DialogResult = true;
-            Close();
+                DialogResult = true;
+                Close();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error saving settings: {ex.Message}");
+                MessageBox.Show($"Error saving settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -276,7 +321,23 @@ namespace TwitchDeckOverlay.UI
                 RunMemoryTestButton.Content = "Memory Test";
             }
         }
-
+        
+        private void SetComboBoxSelection(ComboBox comboBox, string value)
+        {
+            foreach (ComboBoxItem item in comboBox.Items)
+            {
+                if (item.Tag?.ToString() == value)
+                {
+                    comboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+        
+        private string GetComboBoxSelection(ComboBox comboBox)
+        {
+            return (comboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+        }
 
     }
 }

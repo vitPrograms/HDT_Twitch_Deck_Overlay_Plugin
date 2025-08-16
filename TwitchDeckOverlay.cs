@@ -27,7 +27,7 @@ namespace TwitchDeckOverlay
         private readonly Dispatcher _dispatcher;
         private Canvas _canvas;
         private UserControl _overlayView;
-        private const int MaxDeckCount = 5;
+        // MaxDeckCount is now configurable via PluginConfig.MaxDecksToShow
         
         // Моніторинг продуктивності
         private readonly PerformanceMonitor _performanceMonitor;
@@ -223,7 +223,7 @@ namespace TwitchDeckOverlay
 
 
 
-                                        while (Decks.Count > MaxDeckCount)
+                                        while (Decks.Count > _config.MaxDecksInList)
                                         {
                                             Decks.RemoveAt(Decks.Count - 1);
                                             Log.Info($"Removed oldest deck. Current deck count: {Decks.Count}");

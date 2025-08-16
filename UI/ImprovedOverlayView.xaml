@@ -185,6 +185,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
                         <!-- Перший рядок: Клас, режим і кнопки -->
@@ -195,104 +197,226 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             
-                            <!-- Клас і режим -->
+                            <!-- Ліва частина: Іконка класу і назва -->
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Border Width="28" Height="28" 
-                                        CornerRadius="14" 
-                                        Background="#FF404040"
-                                        Margin="0,0,8,0">
-                                    <Grid>
-                                        <Image x:Name="DetailsClassIcon" 
-                                               Width="24" Height="24"
-                                               Stretch="UniformToFill"
-                                               HorizontalAlignment="Center" 
-                                               VerticalAlignment="Center">
-                                            <Image.Clip>
-                                                <EllipseGeometry Center="12,12" RadiusX="12" RadiusY="12"/>
-                                            </Image.Clip>
-                                        </Image>
-                                        <!-- Fallback текст -->
-                                        <TextBlock x:Name="DetailsClassIconText"
-                                                   Text="?" 
-                                                   Foreground="White" 
+                                <StackPanel Orientation="Vertical" Margin="0,0,8,0">
+                                    <Border Width="28" Height="28" 
+                                            CornerRadius="14" 
+                                            Background="#FF404040">
+                                        <TextBlock x:Name="DetailsArchetype" 
+                                                   Text="⚡" 
+                                                   Foreground="#FF56CCF2" 
                                                    FontWeight="Bold" 
-                                                   FontSize="14"
+                                                   FontSize="16" 
                                                    HorizontalAlignment="Center" 
-                                                   VerticalAlignment="Center"/>
+                                                   VerticalAlignment="Center"
+                                                   ToolTip="Deck Archetype"/>
+                                    </Border>
+                                    <TextBlock x:Name="DetailsArchetypeText" 
+                                               Text="Archetype" 
+                                               FontSize="8" 
+                                               Foreground="#FFB8B8B8" 
+                                               HorizontalAlignment="Center" 
+                                               Margin="0,1,0,0"
+                                               Visibility="Collapsed"/>
+                                </StackPanel>
+                                
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock x:Name="DetailsDeckTitle" Text="Deck: Unknown" FontSize="14" FontWeight="Bold" Foreground="White"/>
+                                        <Image x:Name="HSGuruLogoTitle" Source="/Assets/hsguru-logo.png" Width="12" Height="12" 
+                                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,0,0" 
+                                               Visibility="Collapsed" ToolTip="Data from HSGuru"/>
                                     </Grid>
-                                </Border>
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock x:Name="DetailsClass"
-                                               Text="Class" 
-                                               Foreground="#FFD4D4D4" 
-                                               FontWeight="SemiBold" 
-                                               FontSize="14"/>
-                                    <TextBlock x:Name="DetailsMode"
-                                               Text="Mode" 
-                                               Foreground="#FF888888" 
-                                               FontSize="11"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="DetailsClass" Text="Unknown" FontSize="11" Foreground="#FFB8B8B8" Margin="0,0,8,0"/>
+                                        <TextBlock x:Name="DetailsMode" Text="Unknown" FontSize="11" Foreground="#FFB8B8B8"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
                             
                             <!-- Кнопки дій -->
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Background="#FF0078D4" 
-                                        BorderThickness="0" 
-                                        Padding="8,4" 
-                                        Margin="0,0,5,0"
-                                        Click="CopyDeckCodeDetails_Click"
-                                        ToolTip="Copy Deck Code">
-                                    <TextBlock Text="Copy" Foreground="White" FontSize="11"/>
-                                </Button>
-                                <Button Background="#FFFF6B6B" 
-                                        BorderThickness="0" 
-                                        Padding="8,4" 
-                                        Click="RemoveDeckDetails_Click"
-                                        ToolTip="Remove Deck">
-                                    <TextBlock Text="Remove" Foreground="White" FontSize="11"/>
-                                </Button>
+                            <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                <Border Background="#FF3C4043" BorderBrush="#FF5A5A5A" BorderThickness="1" 
+                                        CornerRadius="3" Padding="4,2" Margin="0,0,0,2"
+                                        MouseLeftButtonDown="CopyDeckCodeDetails_Click"
+                                        ToolTip="Copy Deck Code" Cursor="Hand">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Opacity" Value="0.8"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#FF56CCF2"/>
+                                                    <Setter Property="BorderBrush" Value="#FF56CCF2"/>
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="📋" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#FF56CCF2">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=IsMouseOver}" Value="True">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+                                <Border Background="#FF3C4043" BorderBrush="#FF5A5A5A" BorderThickness="1" 
+                                        CornerRadius="3" Padding="4,2"
+                                        MouseLeftButtonDown="RemoveDeckDetails_Click"
+                                        ToolTip="Remove Deck" Cursor="Hand">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Opacity" Value="0.8"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#FFEB5757"/>
+                                                    <Setter Property="BorderBrush" Value="#FFEB5757"/>
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="❌" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#FFEB5757">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=IsMouseOver}" Value="True">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
                             </StackPanel>
                         </Grid>
                         
                         <!-- Другий рядок: Статистика з іконками -->
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
-                            <!-- Кількість карт -->
-                            <Border Background="#FF3A3A3C" CornerRadius="2" Padding="4,2" Margin="0,0,5,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="🃏" FontSize="10" Margin="0,0,3,0" VerticalAlignment="Center"
-                                               UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"/>
-                                    <TextBlock x:Name="DetailsCardCount"
-                                               Text="0" 
-                                               Foreground="#FFD4D4D4" FontSize="10" FontWeight="Bold"
-                                               UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"/>
+                        <Grid Grid.Row="1" Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Блок винрейту -->
+                            <Border Grid.Column="0" Background="#FF3C4043" CornerRadius="6" Padding="6,8" Margin="0,0,4,0" BorderBrush="#FF5A5A5A" BorderThickness="1">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="🎯" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="#FF56CCF2"/>
+                                    <Grid HorizontalAlignment="Center">
+                                        <TextBlock Text="Win Rate" FontSize="9" Foreground="#FFAAAAAA" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                                        <Image x:Name="HSGuruLogoWinRate" Source="/Assets/hsguru-logo.png" Width="10" Height="10" 
+                                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,0,0" 
+                                               Visibility="Collapsed" ToolTip="Data from HSGuru"/>
+                                    </Grid>
+                                    <TextBlock x:Name="DetailsWinRate" Text="--%" FontSize="13" FontWeight="Bold" Foreground="#FF56CCF2" HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Загальна вартість пилюки -->
-                            <Border Background="#FF3A3A3C" CornerRadius="2" Padding="4,2" Margin="0,0,5,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="✨" FontSize="10" Margin="0,0,3,0" VerticalAlignment="Center"
-                                               UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"/>
-                                    <TextBlock x:Name="DetailsTotalDustCost"
-                                               Text="0" 
-                                               Foreground="#FFD4D4D4" FontSize="10" FontWeight="Bold"
-                                               UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"/>
+                            <!-- Блок ігор -->
+                            <Border Grid.Column="1" Background="#FF3C4043" CornerRadius="6" Padding="6,8" Margin="0,0,4,0" BorderBrush="#FF5A5A5A" BorderThickness="1">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="🎮" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="#FF56CCF2"/>
+                                    <Grid HorizontalAlignment="Center">
+                                        <TextBlock Text="Games" FontSize="9" Foreground="#FFAAAAAA" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                                        <Image x:Name="HSGuruLogoGames" Source="/Assets/hsguru-logo.png" Width="10" Height="10" 
+                                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,0,0" 
+                                               Visibility="Collapsed" ToolTip="Data from HSGuru"/>
+                                    </Grid>
+                                    <TextBlock x:Name="DetailsTotalGames" Text="--" FontSize="13" FontWeight="Bold" Foreground="#FF56CCF2" HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                             
-                            <!-- Потрібна пилюка -->
-                            <Border Background="#FF4A2C2C" CornerRadius="2" Padding="4,2" BorderBrush="#FFFF6B6B" BorderThickness="1">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="✨" FontSize="10" Margin="0,0,3,0" VerticalAlignment="Center" 
-                                               Foreground="#FFFF6B6B"
-                                               UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"/>
-                                    <TextBlock x:Name="DetailsDustNeeded"
-                                               Text="0" 
-                                               Foreground="#FFFF6B6B" FontSize="10" FontWeight="Bold"
-                                               UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"/>
+                            <!-- Блок пилу -->
+                            <Border Grid.Column="2" Background="#FF3C4043" CornerRadius="6" Padding="6,8" Margin="0,0,0,0" BorderBrush="#FF5A5A5A" BorderThickness="1">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="✨" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="#FFF2C94C"/>
+                                    <TextBlock Text="Dust Cost" FontSize="9" Foreground="#FFAAAAAA" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                                    <TextBlock x:Name="DetailsDustCost" Text="--" FontSize="13" FontWeight="Bold" Foreground="#FFF2C94C" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="DetailsDustNeeded" Text="" FontSize="9" Foreground="#FFEB5757" HorizontalAlignment="Center" Margin="0,1,0,0" Visibility="Collapsed"/>
                                 </StackPanel>
                             </Border>
-                        </StackPanel>
+                        </Grid>
+                        
+                        <!-- Третій рядок: Графік мани -->
+                        <Grid Grid.Row="2" Margin="0,6,0,0">
+                            <Border Background="#FF3C4043" CornerRadius="6" Padding="10,6" BorderBrush="#FF5A5A5A" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Mana Curve" FontSize="10" Foreground="#FFAAAAAA" 
+                                               HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                    <Canvas x:Name="ManaCurveCanvas" Height="70" Width="180" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        
+                        <!-- Четвертий рядок: Матчапи -->
+                        <Grid Grid.Row="3" Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Додаткова інформація -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <!-- Легендарні карти -->
+                                <Border Background="#FF3C4043" CornerRadius="4" Padding="8,6" 
+                                        BorderBrush="#FF5A5A5A" BorderThickness="1" Margin="0,0,8,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="💎" FontSize="12" Margin="0,0,6,0" 
+                                                   VerticalAlignment="Center" Foreground="#FFF2C94C"/>
+                                        <TextBlock Grid.Column="1" Text="Legendary" FontSize="10" 
+                                                   Foreground="#FFAAAAAA" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" x:Name="DetailsLegendaryCount" Text="0" Margin="6,0,0,0"
+                                                   Foreground="#FFF2C94C" FontSize="12" FontWeight="Bold"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                            
+                            <!-- Кнопка матчапів з tooltip -->
+                            <Border Grid.Column="1" x:Name="MatchupsButton" 
+                                    Background="#FF3C4043" BorderBrush="#FF5A5A5A" BorderThickness="1" 
+                                    CornerRadius="4" Padding="6,4" Margin="0,0,0,4" Cursor="Hand"
+                                    MouseEnter="MatchupsButton_MouseEnter" 
+                                    MouseLeave="MatchupsButton_MouseLeave">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Opacity" Value="0.8"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#FF505050"/>
+                                                <Setter Property="BorderBrush" Value="#FF707070"/>
+                                                <Setter Property="Opacity" Value="1.0"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚔️" FontSize="12" Margin="0,0,4,0" VerticalAlignment="Center" Foreground="#FFD4D4D4"/>
+                                    <TextBlock Text="Matchups ℹ️" FontSize="10" Foreground="#FFD4D4D4" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <!-- Tooltip з матчапами -->
+                                <Border.ToolTip>
+                                    <ToolTip x:Name="MatchupsTooltip" Background="#FF2D2D30" BorderBrush="#FF404040" BorderThickness="1" Padding="12">
+                                        <StackPanel x:Name="MatchupsTooltipContent" MaxWidth="250">
+                                            <TextBlock Text="Class Matchups" FontSize="12" FontWeight="Bold" 
+                                                       Foreground="#FFD4D4D4" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+                                            <!-- Динамічний контент буде додано в коді -->
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Border.ToolTip>
+                            </Border>
+                        </Grid>
                     </Grid>
                     
                     <!-- Список карт з HDT стилем -->

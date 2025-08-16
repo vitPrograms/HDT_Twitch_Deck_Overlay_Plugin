@@ -209,6 +209,9 @@ namespace TwitchDeckOverlay.Services
                     Log.Warn("HearthDbDeckParser: CardDbfIds property not found");
                 }
                 
+                // Розраховуємо статистику колоди
+                deckInfo.Statistics.CalculateFromCards(deckInfo.Cards);
+                
                 Log.Info($"HearthDbDeckParser: Converted deck - Class: {deckInfo.Class}, Cards: {deckInfo.Cards.Count}, Mode: {deckInfo.Mode}");
                 return deckInfo;
             }

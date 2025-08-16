@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Media.Imaging;
+using TwitchDeckOverlay.Services;
 
 namespace TwitchDeckOverlay.Models
 {
@@ -34,6 +35,8 @@ namespace TwitchDeckOverlay.Models
         public List<CardInfo> Cards { get; set; }
         public RuneSlots RuneSlots { get; set; }
         public string HeroPowerImage { get; set; }
+        public DeckStatistics Statistics { get; set; } = new DeckStatistics();
+        public DeckStatisticsInfo OnlineStats { get; set; }
         
         private static readonly Dictionary<string, string> ImbuedHeroPowers = new Dictionary<string, string>
     {

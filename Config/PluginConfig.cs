@@ -1,4 +1,4 @@
-﻿using Hearthstone_Deck_Tracker;
+using Hearthstone_Deck_Tracker;
 using Hearthstone_Deck_Tracker.Utility;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using System;
@@ -29,24 +29,38 @@ namespace TwitchDeckOverlay.Config
         }
 
         public string TwitchChannel { get; set; } = string.Empty;
+        public string TwitchChannelNickname { get; set; } = string.Empty;
         public string BlizzardBearerToken { get; set; } = "EU0t5QWz3O8WoHLWQRj5eHMcGZIIRKUSfy";
         public double OverlayWindowLeft { get; set; } = 100.0;
         public double OverlayWindowTop { get; set; } = 100.0;
 
-        // Нові налаштування
+        // Налаштування колекції та пилюки
         public bool CheckCardsInCollectionEnabled { get; set; } = true;
         public bool CalculateTotalDustCostEnabled { get; set; } = true;
         public bool CalculateDustNeededEnabled { get; set; } = true;
         public bool ShowFocusWindowOnCopyEnabled { get; set; } = true;
+        
+        // Налаштування HSGuru
+        public bool FetchOnlineStatisticsEnabled { get; set; } = true;
+        public bool FetchWinRateAndGamesEnabled { get; set; } = true;
+        public bool FetchArchetypeEnabled { get; set; } = true;
+        public bool FetchMatchupsEnabled { get; set; } = true;
+        
+        // HSGuru фільтри
+        public string HSGuruRankFilter { get; set; } = "all"; // all, diamond_to_legend, diamond_4to1, legend, top_5k, top_legend
+        public string HSGuruPeriodFilter { get; set; } = "past_week"; // past_week, past_3_days, past_day, past_6_hours
+        
+        // Налаштування інтерфейсу
+        public int MaxDecksInList { get; set; } = 10;
 
         // Версія плагіна
-        public string PluginVersion { get; set; } = "1.0.4";
+        public string PluginVersion { get; set; } = "1.0.5";
 
         public static void Load()
         {
             if (!File.Exists(ConfigPath))
             {
-                Log.Info($"Config file not found at {ConfigPath}, creating new instance.");
+                Log.Info($"TwitchDeckOverlay: Config file not found at {ConfigPath}, creating new instance.");
                 _instance = new PluginConfig();
                 return;
             }
