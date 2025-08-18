@@ -54,7 +54,6 @@ namespace TwitchDeckOverlay.Services
             var config = PluginConfig.Instance;
             var cacheKey = $"{deckCode}_{config.HSGuruRankFilter}_{config.HSGuruPeriodFilter}";
 
-            // Перевіряємо кеш
             if (_cache.TryGetValue(cacheKey, out var cachedStats))
             {
                 if (DateTime.Now - cachedStats.LastUpdated < _cacheExpiry)
@@ -66,7 +65,6 @@ namespace TwitchDeckOverlay.Services
                 Log.Info("HSGuruService: Cache expired, removing old entry");
             }
 
-            // Обмежуємо кількість одночасних запитів
             if (!await _semaphore.WaitAsync(100))
             {
                 Log.Info("HSGuruService: Too many concurrent requests, skipping");
@@ -130,12 +128,10 @@ namespace TwitchDeckOverlay.Services
             {
                 var stats = new DeckStatisticsInfo();
 
-                // DEBUG: Логуємо частину HTML навколо Total row для діагностики
-                Log.Info("=== DEBUG: HTML PARSING ===");
                 var totalRowMatch = Regex.Match(html, @"<tr[^>]*>.*?<td[^>]*>Total</td>.*?</tr>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                 if (totalRowMatch.Success)
                 {
-                    Log.Info($"DEBUG: Found Total row HTML: {totalRowMatch.Value}");
+                    Log.Info($"DEBUG: Found Total row HTML");
                 }
                 else
                 {
@@ -143,10 +139,6 @@ namespace TwitchDeckOverlay.Services
                     // Шукаємо будь-які рядки з "Total"
                     var totalMatches = Regex.Matches(html, @".{0,100}Total.{0,100}", RegexOptions.IgnoreCase);
                     Log.Info($"DEBUG: Found {totalMatches.Count} occurrences of 'Total' in HTML:");
-                    for (int i = 0; i < Math.Min(totalMatches.Count, 3); i++)
-                    {
-                        Log.Info($"DEBUG: Total occurrence {i + 1}: {totalMatches[i].Value}");
-                    }
                 }
 
                 // Парсимо загальний винрейт з таблиці (Total row)
@@ -155,7 +147,6 @@ namespace TwitchDeckOverlay.Services
                 var totalWinRateMatch = Regex.Match(html, totalWinRatePattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
                 if (totalWinRateMatch.Success)
                 {
-                    Log.Info($"DEBUG: Primary pattern matched: {totalWinRateMatch.Groups[1].Value}");
                     if (double.TryParse(totalWinRateMatch.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double winRate))
                     {
                         stats.WinRate = winRate;
@@ -190,13 +181,10 @@ namespace TwitchDeckOverlay.Services
                     {
                         Log.Info("DEBUG: Alternative pattern also failed, trying more patterns...");
                         
-                        // Ще один патерн - просто шукаємо числа після Total
                         var simplePattern = @"Total</td>.*?(\d+\.?\d*)";
                         var simpleMatch = Regex.Match(html, simplePattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
                         if (simpleMatch.Success)
                         {
-                            Log.Info($"DEBUG: Simple pattern found number: {simpleMatch.Groups[1].Value}");
-                            // Перевіряємо чи це винрейт (має бути менше 100)
                             if (double.TryParse(simpleMatch.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double possibleWinRate) && possibleWinRate <= 100)
                             {
                                 stats.WinRate = possibleWinRate;
@@ -225,28 +213,23 @@ namespace TwitchDeckOverlay.Services
                     }
                 }
 
-                // Парсимо назву колоди з заголовка
                 var titleMatch = Regex.Match(html, @"<div class=""title is-2"">([^<]+)</div>", RegexOptions.IgnoreCase);
                 if (titleMatch.Success)
                 {
                     var deckName = titleMatch.Groups[1].Value.Trim();
-                    // Видаляємо формат гри з кінця назви (Standard, Wild, Classic)
                     deckName = Regex.Replace(deckName, @"\s+(Standard|Wild|Classic)$", "", RegexOptions.IgnoreCase).Trim();
                     stats.DeckName = deckName;
                     Log.Info($"HSGuruService: Found deck name: {stats.DeckName}");
                 }
                 else
                 {
-                    // Альтернативний пошук в title тегу
                     var titleTagMatch = Regex.Match(html, @"<title>([^<]+)</title>", RegexOptions.IgnoreCase);
                     if (titleTagMatch.Success)
                     {
                         var fullTitle = titleTagMatch.Groups[1].Value.Trim();
-                        // Видаляємо " - HSGuru" з кінця
                         if (fullTitle.EndsWith(" - HSGuru"))
                         {
                             var deckName = fullTitle.Substring(0, fullTitle.Length - " - HSGuru".Length).Trim();
-                            // Видаляємо формат гри з кінця назви
                             deckName = Regex.Replace(deckName, @"\s+(Standard|Wild|Classic)$", "", RegexOptions.IgnoreCase).Trim();
                             stats.DeckName = deckName;
                             Log.Info($"HSGuruService: Found deck name from title: {stats.DeckName}");
@@ -254,7 +237,6 @@ namespace TwitchDeckOverlay.Services
                     }
                 }
 
-                // Парсимо матчапи проти класів
                 ParseClassMatchups(html, stats);
 
                 Log.Debug($"HSGuruService: Parsed - WinRate: {stats.WinRate}%, Games: {stats.TotalGames}");
@@ -273,8 +255,6 @@ namespace TwitchDeckOverlay.Services
             {
                 Log.Info("HSGuruService: Starting to parse class matchups...");
                 
-                // Новий патерн на основі реального HTML з логів
-                // Шукаємо рядки з класами (не Total) та їх винрейти
                 var matchupPattern = @"<td><span class=""tag player-name \w+""><span class=""basic-black-text"">([^<]+)</span></span></td>\s*<td>\s*<span[^>]*>\s*<span class=""basic-black-text"">\s*(\d+\.?\d*)\s*</span>";
                 var matches = Regex.Matches(html, matchupPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
@@ -285,23 +265,17 @@ namespace TwitchDeckOverlay.Services
                     var className = match.Groups[1].Value.Trim();
                     var winRateStr = match.Groups[2].Value.Trim();
                     
-                    Log.Info($"HSGuruService: Processing matchup - Class: '{className}', WinRate: '{winRateStr}'");
-                    
-                    // Пропускаємо рядок Total
                     if (className.Equals("Total", StringComparison.OrdinalIgnoreCase))
                     {
-                        Log.Info($"HSGuruService: Skipping Total row");
                         continue;
                     }
                     
                     if (double.TryParse(winRateStr, NumberStyles.Float, CultureInfo.InvariantCulture, out double winRate))
                     {
-                        // Конвертуємо назви класів до стандартного формату
                         var standardClassName = NormalizeClassName(className);
                         if (!string.IsNullOrEmpty(standardClassName))
                         {
                             stats.ClassMatchups[standardClassName] = winRate;
-                            Log.Info($"HSGuruService: Added matchup - {standardClassName}: {winRate}%");
                         }
                         else
                         {
@@ -316,11 +290,6 @@ namespace TwitchDeckOverlay.Services
                 
                 Log.Info($"HSGuruService: Successfully parsed {stats.ClassMatchups.Count} class matchups");
                 
-                // Логуємо всі знайдені матчапи
-                foreach (var matchup in stats.ClassMatchups)
-                {
-                    Log.Info($"HSGuruService: Final matchup - {matchup.Key}: {matchup.Value}%");
-                }
             }
             catch (Exception ex)
             {
@@ -332,8 +301,6 @@ namespace TwitchDeckOverlay.Services
         {
             if (string.IsNullOrEmpty(className))
                 return className;
-
-            // Конвертуємо до стандартних назв класів Hearthstone
             switch (className.ToLower())
             {
                 case "warrior": return "Warrior";
@@ -361,7 +328,6 @@ namespace TwitchDeckOverlay.Services
                     return;
                 }
 
-                // Визначаємо формат для запиту (поки що використовуємо Standard за замовчуванням)
                 var format = 2; // Standard
                 var metaUrl = $"https://www.hsguru.com/meta?format={format}";
                 
@@ -374,7 +340,6 @@ namespace TwitchDeckOverlay.Services
                 {
                     stats.AverageTurns = archetype.AverageTurns;
                     stats.ArchetypeCategory = DetermineArchetypeCategory(archetype.AverageTurns);
-                    Log.Info($"HSGuruService: Found archetype data - Turns: {stats.AverageTurns}, Category: {stats.ArchetypeCategory}");
                 }
                 else
                 {
@@ -391,7 +356,6 @@ namespace TwitchDeckOverlay.Services
         {
             try
             {
-                // Шукаємо рядок таблиці з назвою архетипу
                 var pattern = $@"<td[^>]*class=""decklist-info[^>]*>\s*<a[^>]*href=""/archetype/[^""]*""[^>]*>\s*{Regex.Escape(deckName)}\s*</a>\s*</td>.*?<td[^>]*>([\d.]+)</td>";
                 var match = Regex.Match(html, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
                 
@@ -404,7 +368,6 @@ namespace TwitchDeckOverlay.Services
                     }
                 }
                 
-                // Якщо точне співпадіння не знайдено, спробуємо часткове
                 var partialPattern = @"<td[^>]*class=""decklist-info[^>]*>\s*<a[^>]*href=""/archetype/[^""]*""[^>]*>\s*([^<]+)\s*</a>\s*</td>.*?<td[^>]*>([\d.]+)</td>";
                 var matches = Regex.Matches(html, partialPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
                 
@@ -457,20 +420,6 @@ namespace TwitchDeckOverlay.Services
         {
             _cache.Clear();
             Log.Info("HSGuruService: Cache cleared");
-        }
-        
-        // DEBUG: Метод для очищення кешу конкретної колоди
-        public static void ClearDeckCache(string deckCode)
-        {
-            if (_cache.ContainsKey(deckCode))
-            {
-                _cache.Remove(deckCode);
-                Log.Info($"HSGuruService: Cleared cache for deck: {deckCode}");
-            }
-            else
-            {
-                Log.Info($"HSGuruService: No cache entry found for deck: {deckCode}");
-            }
         }
     }
 }
