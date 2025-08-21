@@ -1111,7 +1111,7 @@ namespace TwitchDeckOverlay.UI
                 // Заголовок
                 var titleBlock = new TextBlock
                 {
-                    Text = "Class Matchups",
+                    Text = "Class Matchups" + (string.IsNullOrEmpty(_currentDeckDetails.OnlineStats.DeckName) ? "" : $" for {_currentDeckDetails.OnlineStats.DeckName}"),
                     FontSize = 12,
                     FontWeight = FontWeights.Bold,
                     Foreground = new SolidColorBrush(Colors.White),
