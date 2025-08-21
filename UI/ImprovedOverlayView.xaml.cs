@@ -38,8 +38,48 @@ namespace TwitchDeckOverlay.UI
             DataContext = deckManager;
             
             _ = InitializeCollectionCacheAsync();
+            InitializeHSGuruFilters();
         }
 
+        private void InitializeHSGuruFilters()
+        {
+            var config = PluginConfig.Instance;
+            SetComboBoxSelection(HSGuruRankFilterComboBox, config.HSGuruRankFilter);
+            SetComboBoxSelection(HSGuruPeriodFilterComboBox, config.HSGuruPeriodFilter);
+
+            HSGuruRankFilterComboBox.SelectionChanged += HSGuruFilterComboBox_SelectionChanged;
+            HSGuruPeriodFilterComboBox.SelectionChanged += HSGuruFilterComboBox_SelectionChanged;
+        }
+
+        private void SetComboBoxSelection(ComboBox comboBox, string value)
+        {
+            foreach (ComboBoxItem item in comboBox.Items)
+            {
+                if (item.Tag?.ToString() == value)
+                {
+                    comboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private string GetComboBoxSelection(ComboBox comboBox)
+        {
+            return (comboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+        }
+
+        private async void HSGuruFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_currentDeckDetails == null) return;
+
+            var config = PluginConfig.Instance;
+            config.HSGuruRankFilter = GetComboBoxSelection(HSGuruRankFilterComboBox) ?? "all";
+            config.HSGuruPeriodFilter = GetComboBoxSelection(HSGuruPeriodFilterComboBox) ?? "past_week";
+            PluginConfig.Save();
+
+            Log.Info($"HSGuru filters changed. Rank: {config.HSGuruRankFilter}, Period: {config.HSGuruPeriodFilter}. Reloading stats.");
+            await LoadOnlineStatisticsAsync(_currentDeckDetails);
+        }
 
 
         // Методи для перетягування
@@ -112,12 +152,18 @@ namespace TwitchDeckOverlay.UI
 
             try
             {
+                _deckManager.IsLoadingHSGuruData = true; // Start loading animation
+
                 Log.Info("LoadOnlineStatisticsAsync: Calling HSGuruService...");
-                var onlineStats = await HSGuruService.GetDeckStatisticsAsync(deckInfo.DeckCode);
+                var onlineStats = await HSGuruService.GetDeckStatisticsAsync(
+                    deckInfo.DeckCode,
+                    PluginConfig.Instance.HSGuruRankFilter,
+                    PluginConfig.Instance.HSGuruPeriodFilter
+                );
                 
                 if (onlineStats != null)
                 {
-                    Log.Info($"LoadOnlineStatisticsAsync: Got stats - WinRate: {onlineStats.WinRate}%, Games: {onlineStats.TotalGames}");
+                    Log.Info($"LoadOnlineStatisticsAsync: Got stats - WinRate: {onlineStats.WinRate}%, Games: {onlineStats.TotalGames}. Rank Filter: {PluginConfig.Instance.HSGuruRankFilter}, Period Filter: {PluginConfig.Instance.HSGuruPeriodFilter}");
                     deckInfo.OnlineStats = onlineStats;
                     
                     // Якщо є назва колоди з HSGuru, використовуємо її
@@ -145,6 +191,10 @@ namespace TwitchDeckOverlay.UI
             catch (Exception ex)
             {
                 Log.Error($"ImprovedOverlayView: Error loading online statistics: {ex.Message}");
+            }
+            finally
+            {
+                _deckManager.IsLoadingHSGuruData = false; // Stop loading animation
             }
         }
         
@@ -730,6 +780,27 @@ namespace TwitchDeckOverlay.UI
 
         }
 
+        private async void PasteDeckCodeButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (Clipboard.ContainsText())
+                {
+                    string clipboardText = Clipboard.GetText();
+                    Log.Info($"Attempting to process clipboard content: {clipboardText}");
+                    await _deckManager.ProcessClipboardDeckCodeAsync(clipboardText);
+                }
+                else
+                {
+                    Log.Info("Clipboard does not contain text.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error pasting deck code: {ex.Message}");
+            }
+        }
+
         private void DeckItemView_Loaded(object sender, RoutedEventArgs e)
         {
             if (sender is DeckItemView deckItemView)
@@ -900,7 +971,7 @@ namespace TwitchDeckOverlay.UI
                 var matchupsWindow = new Window
                 {
                     Title = "Class Matchups",
-                    Width = 300,
+                    Width = 250, // Reduced width
                     Height = 400,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                     Owner = Application.Current.MainWindow,
@@ -930,8 +1001,12 @@ namespace TwitchDeckOverlay.UI
 
                 // Сортуємо матчапи по винрейту (найкращі зверху)
                 var sortedMatchups = _currentDeckDetails.OnlineStats.ClassMatchups
-                    .OrderByDescending(kvp => kvp.Value)
+                    .OrderByDescending(kvp => kvp.Value.WinRate) // Access WinRate property
                     .ToList();
+
+                // Знаходимо максимальну кількість ігор для масштабування смужок
+                int maxTotalGames = sortedMatchups.Any() ? sortedMatchups.Max(m => m.Value.TotalGames) : 1;
+                double maxBarWidth = 70; // Максимальна ширина для смужки візуалізації
 
                 foreach (var matchup in sortedMatchups)
                 {
@@ -944,36 +1019,68 @@ namespace TwitchDeckOverlay.UI
                     };
 
                     var grid = new Grid();
-                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Class Name
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(55) }); // Winrate
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) }); // Total Games
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(maxBarWidth) }); // Visualization bar
 
                     var classText = new TextBlock
                     {
                         Text = matchup.Key,
                         Foreground = new SolidColorBrush(Colors.White),
-                        VerticalAlignment = VerticalAlignment.Center
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(0, 0, 10, 0) // Increased right margin for spacing
                     };
                     Grid.SetColumn(classText, 0);
 
                     var winRateText = new TextBlock
                     {
-                        Text = $"{matchup.Value:F1}%",
+                        Text = $"{matchup.Value.WinRate:F1}%", // Access WinRate property
                         FontWeight = FontWeights.Bold,
-                        VerticalAlignment = VerticalAlignment.Center
+                        HorizontalAlignment = HorizontalAlignment.Right, // Align to right
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(5, 0, 0, 0) // Keep left margin
                     };
 
                     // Колір залежно від винрейту
-                    if (matchup.Value >= 60)
+                    if (matchup.Value.WinRate >= 60)
                         winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 76, 175, 80)); // Зелений
-                    else if (matchup.Value >= 50)
+                    else if (matchup.Value.WinRate >= 50)
                         winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 193, 7)); // Жовтий
                     else
                         winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 244, 67, 54)); // Червоний
 
                     Grid.SetColumn(winRateText, 1);
 
+                    var totalGamesText = new TextBlock
+                    {
+                        Text = $"({matchup.Value.TotalGames})", // Display total games
+                        FontSize = 10,
+                        Foreground = new SolidColorBrush(Colors.LightGray),
+                        HorizontalAlignment = HorizontalAlignment.Right, // Align to right
+                        Margin = new Thickness(5, 0, 0, 0), // Keep left margin
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    Grid.SetColumn(totalGamesText, 2);
+
+                    // Візуалізація кількості ігор
+                    var gamesBar = new Border
+                    {
+                        Background = new SolidColorBrush(Color.FromArgb(255, 100, 149, 237)), // Синій колір
+                        Height = 8,
+                        CornerRadius = new CornerRadius(2),
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(5, 0, 0, 0) // Left margin for spacing
+                    };
+                    // Обчислюємо ширину смужки пропорційно
+                    gamesBar.Width = (double)matchup.Value.TotalGames / maxTotalGames * maxBarWidth;
+                    Grid.SetColumn(gamesBar, 3);
+
                     grid.Children.Add(classText);
                     grid.Children.Add(winRateText);
+                    grid.Children.Add(totalGamesText);
+                    grid.Children.Add(gamesBar); // Add the bar to the grid
                     border.Child = grid;
                     stackPanel.Children.Add(border);
                 }
@@ -1015,8 +1122,12 @@ namespace TwitchDeckOverlay.UI
 
                 // Сортуємо матчапи по винрейту (найкращі зверху)
                 var sortedMatchups = _currentDeckDetails.OnlineStats.ClassMatchups
-                    .OrderByDescending(kvp => kvp.Value)
+                    .OrderByDescending(kvp => kvp.Value.WinRate)
                     .ToList();
+
+                // Знаходимо максимальну кількість ігор для масштабування смужок
+                int maxTotalGames = sortedMatchups.Any() ? sortedMatchups.Max(m => m.Value.TotalGames) : 1;
+                double maxBarWidth = 50; // Максимальна ширина для смужки візуалізації в тултіпі
 
                 foreach (var matchup in sortedMatchups)
                 {
@@ -1029,33 +1140,38 @@ namespace TwitchDeckOverlay.UI
                     };
 
                     var grid = new Grid();
-                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Class Name
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(45) }); // Fixed width for Winrate
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) }); // Fixed width for Total Games
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(maxBarWidth) }); // Visualization bar
 
                     var classText = new TextBlock
                     {
                         Text = matchup.Key,
                         Foreground = new SolidColorBrush(Colors.White),
                         FontSize = 11,
-                        VerticalAlignment = VerticalAlignment.Center
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(0, 0, 5, 0) // Add right margin to class name
                     };
                     Grid.SetColumn(classText, 0);
 
                     var winRateText = new TextBlock
                     {
-                        Text = $"{matchup.Value:F1}%",
+                        Text = $"{matchup.Value.WinRate:F1}%",
                         FontSize = 11,
                         FontWeight = FontWeights.Bold,
-                        VerticalAlignment = VerticalAlignment.Center
+                        HorizontalAlignment = HorizontalAlignment.Right, // Align to right
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(5, 0, 0, 0) // Add left margin to winrate
                     };
 
                     // Кольорове кодування винрейту
-                    if (matchup.Value >= 60)
+                    if (matchup.Value.WinRate >= 60)
                     {
                         winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 111, 207, 151)); // Зелений
                         border.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 111, 207, 151));
                     }
-                    else if (matchup.Value >= 50)
+                    else if (matchup.Value.WinRate >= 50)
                     {
                         winRateText.Foreground = new SolidColorBrush(Color.FromArgb(255, 242, 201, 76)); // Жовтий
                         border.BorderBrush = new SolidColorBrush(Color.FromArgb(255, 242, 201, 76));
@@ -1069,8 +1185,35 @@ namespace TwitchDeckOverlay.UI
                     border.BorderThickness = new Thickness(1);
                     Grid.SetColumn(winRateText, 1);
 
+                    var totalGamesText = new TextBlock
+                    {
+                        Text = $"({matchup.Value.TotalGames})",
+                        FontSize = 9,
+                        Foreground = new SolidColorBrush(Colors.LightGray),
+                        HorizontalAlignment = HorizontalAlignment.Right, // Align to right
+                        Margin = new Thickness(5, 0, 0, 0),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    Grid.SetColumn(totalGamesText, 2);
+
+                    // Візуалізація кількості ігор
+                    var gamesBar = new Border
+                    {
+                        Background = new SolidColorBrush(Color.FromArgb(255, 100, 149, 237)), // Синій колір
+                        Height = 6, // Менша висота для тултіпа
+                        CornerRadius = new CornerRadius(1),
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(5, 0, 0, 0) // Left margin for spacing
+                    };
+                    // Обчислюємо ширину смужки пропорційно
+                    gamesBar.Width = (double)matchup.Value.TotalGames / maxTotalGames * maxBarWidth;
+                    Grid.SetColumn(gamesBar, 3);
+
                     grid.Children.Add(classText);
                     grid.Children.Add(winRateText);
+                    grid.Children.Add(totalGamesText);
+                    grid.Children.Add(gamesBar); // Add the bar to the grid
                     border.Child = grid;
                     MatchupsTooltipContent.Children.Add(border);
                 }

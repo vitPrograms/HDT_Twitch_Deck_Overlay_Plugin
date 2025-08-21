@@ -15,6 +15,7 @@ using TwitchDeckOverlay.Config;
 using System.Windows;
 using System.Windows.Media;
 using TwitchDeckOverlay.Utility;
+using Hearthstone_Deck_Tracker.Hearthstone;
 
 namespace TwitchDeckOverlay
 {
@@ -48,6 +49,34 @@ namespace TwitchDeckOverlay
                     OnPropertyChanged();
                     Log.Info($"Twitch channel changed to: {value}");
                     _ = ReconnectAsync();
+                }
+            }
+        }
+
+        private string _twitchChannelNickname;
+        public string TwitchChannelNickname
+        {
+            get => _twitchChannelNickname;
+            set
+            {
+                if (_twitchChannelNickname != value)
+                {
+                    _twitchChannelNickname = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private bool _isLoadingHSGuruData;
+        public bool IsLoadingHSGuruData
+        {
+            get => _isLoadingHSGuruData;
+            set
+            {
+                if (_isLoadingHSGuruData != value)
+                {
+                    _isLoadingHSGuruData = value;
+                    OnPropertyChanged();
                 }
             }
         }
@@ -109,6 +138,27 @@ namespace TwitchDeckOverlay
             Log.Info("Applied new config");
         }
 
+        public async Task ProcessClipboardDeckCodeAsync(string clipboardContent)
+        {
+            using (var operation = _performanceMonitor.StartOperation("ProcessClipboardDeckCode"))
+            {
+                Log.Info($"Processing clipboard content for deck code: {clipboardContent}");
+                var match = _deckCodeRegex.Match(clipboardContent);
+                if (match.Success)
+                {
+                    string deckCode = match.Groups[1].Value;
+                    Log.Info($"Found deck code in clipboard: {deckCode}");
+                    // Use a dummy TwitchMessage to reuse existing logic
+                    var dummyMessage = new TwitchMessage("Clipboard", deckCode) { Timestamp = DateTime.Now };
+                    await HandleTwitchMessage(dummyMessage);
+                }
+                else
+                {
+                    Log.Info("No deck code found in clipboard content.");
+                }
+            }
+        }
+
         // Додаємо метод для перевірки стану підключення
         public async Task CheckConnectionHealthAsync()
         {
@@ -143,7 +193,7 @@ namespace TwitchDeckOverlay
             }
         }
 
-        private void HandleRawMessage(string raw)
+        private async void HandleRawMessage(string raw)
         {
             using (var operation = _performanceMonitor.StartOperation("HandleRawMessage"))
             {
@@ -165,7 +215,7 @@ namespace TwitchDeckOverlay
 
 
                         var message = new TwitchMessage(username, content);
-                        HandleTwitchMessage(message);
+                        await HandleTwitchMessage(message);
                     }
                     else
                     {
@@ -179,7 +229,7 @@ namespace TwitchDeckOverlay
             }
         }
 
-        private async void HandleTwitchMessage(TwitchMessage message)
+        private async Task HandleTwitchMessage(TwitchMessage message)
         {
             using (var operation = _performanceMonitor.StartOperation("HandleTwitchMessage"))
             {

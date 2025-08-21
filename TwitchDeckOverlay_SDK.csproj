@@ -14,12 +14,14 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DefineConstants>TRACE</DefineConstants>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,21 +39,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="HearthDb">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.6\HearthDb.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="HearthMirror">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.6\HearthMirror.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="HearthstoneDeckTracker">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.6\HearthstoneDeckTracker.exe</HintPath>
-      <Private>false</Private>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -81,6 +68,17 @@
     <EmbeddedResource Remove="hdt-plugin-example\**" />
     <None Remove="hdt-plugin-example\**" />
     <Page Remove="hdt-plugin-example\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="HearthDb">
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.8\HearthDb.dll</HintPath>
+    </Reference>
+    <Reference Include="HearthMirror">
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.8\HearthMirror.dll</HintPath>
+    </Reference>
+    <Reference Include="HearthstoneDeckTracker">
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.8\HearthstoneDeckTracker.exe</HintPath>
+    </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

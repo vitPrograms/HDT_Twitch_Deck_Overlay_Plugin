@@ -15,7 +15,7 @@ namespace TwitchDeckOverlay.Services
     {
         public double WinRate { get; set; }
         public int TotalGames { get; set; }
-        public Dictionary<string, double> ClassMatchups { get; set; } = new Dictionary<string, double>();
+        public Dictionary<string, Models.DeckInfo.MatchupData> ClassMatchups { get; set; } = new Dictionary<string, Models.DeckInfo.MatchupData>();
         public string Tier { get; set; }
         public string DeckName { get; set; }
         public double AverageTurns { get; set; }
@@ -40,9 +40,9 @@ namespace TwitchDeckOverlay.Services
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
         }
 
-        public static async Task<DeckStatisticsInfo> GetDeckStatisticsAsync(string deckCode)
+        public static async Task<DeckStatisticsInfo> GetDeckStatisticsAsync(string deckCode, string rankFilter, string periodFilter)
         {
-            Log.Info($"HSGuruService: GetDeckStatisticsAsync called with deckCode: {deckCode}");
+            Log.Info($"HSGuruService: GetDeckStatisticsAsync called with deckCode: {deckCode}, Rank Filter: {rankFilter}, Period Filter: {periodFilter}");
             
             if (string.IsNullOrEmpty(deckCode))
             {
@@ -51,8 +51,7 @@ namespace TwitchDeckOverlay.Services
             }
 
             // Create cache key that includes filter parameters
-            var config = PluginConfig.Instance;
-            var cacheKey = $"{deckCode}_{config.HSGuruRankFilter}_{config.HSGuruPeriodFilter}";
+            var cacheKey = $"{deckCode}_{rankFilter}_{periodFilter}";
 
             if (_cache.TryGetValue(cacheKey, out var cachedStats))
             {
@@ -77,16 +76,16 @@ namespace TwitchDeckOverlay.Services
                 var url = $"https://www.hsguru.com/deck/{Uri.EscapeDataString(deckCode)}";
                 
                 // Add rank filter if specified
-                if (!string.IsNullOrEmpty(config.HSGuruRankFilter) && config.HSGuruRankFilter != "all")
+                if (!string.IsNullOrEmpty(rankFilter))
                 {
-                    url += $"?rank={Uri.EscapeDataString(config.HSGuruRankFilter)}";
+                    url += $"?rank={Uri.EscapeDataString(rankFilter)}";
                 }
                 
                 // Add period filter if specified
-                if (!string.IsNullOrEmpty(config.HSGuruPeriodFilter) && config.HSGuruPeriodFilter != "past_week")
+                if (!string.IsNullOrEmpty(periodFilter))
                 {
                     var separator = url.Contains("?") ? "&" : "?";
-                    url += $"{separator}period={Uri.EscapeDataString(config.HSGuruPeriodFilter)}";
+                    url += $"{separator}period={Uri.EscapeDataString(periodFilter)}";
                 }
                 
                 Log.Info($"HSGuruService: Fetching statistics from {url}");
@@ -255,7 +254,8 @@ namespace TwitchDeckOverlay.Services
             {
                 Log.Info("HSGuruService: Starting to parse class matchups...");
                 
-                var matchupPattern = @"<td><span class=""tag player-name \w+""><span class=""basic-black-text"">([^<]+)</span></span></td>\s*<td>\s*<span[^>]*>\s*<span class=""basic-black-text"">\s*(\d+\.?\d*)\s*</span>";
+                // Updated regex to capture class name, win rate, and total games
+                var matchupPattern = @"<td><span class=""tag player-name \w+""><span class=""basic-black-text"">([^<]+)</span></span></td>\s*<td>\s*<span[^>]*>\s*<span class=""basic-black-text"">\s*(\d+\.?\d*)\s*</span>\s*</span>\s*</td>\s*<td>(\d+)(?:\s*\([\d.]+%\))?</td>";
                 var matches = Regex.Matches(html, matchupPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
                 Log.Info($"HSGuruService: Found {matches.Count} potential matchup matches with new pattern");
@@ -264,18 +264,20 @@ namespace TwitchDeckOverlay.Services
                 {
                     var className = match.Groups[1].Value.Trim();
                     var winRateStr = match.Groups[2].Value.Trim();
+                    var totalGamesStr = match.Groups[3].Value.Trim();
                     
                     if (className.Equals("Total", StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
                     
-                    if (double.TryParse(winRateStr, NumberStyles.Float, CultureInfo.InvariantCulture, out double winRate))
+                    if (double.TryParse(winRateStr, NumberStyles.Float, CultureInfo.InvariantCulture, out double winRate) &&
+                        int.TryParse(totalGamesStr, out int totalGames))
                     {
                         var standardClassName = NormalizeClassName(className);
                         if (!string.IsNullOrEmpty(standardClassName))
                         {
-                            stats.ClassMatchups[standardClassName] = winRate;
+                            stats.ClassMatchups[standardClassName] = new Models.DeckInfo.MatchupData { WinRate = winRate, TotalGames = totalGames };
                         }
                         else
                         {
@@ -284,7 +286,7 @@ namespace TwitchDeckOverlay.Services
                     }
                     else
                     {
-                        Log.Warn($"HSGuruService: Could not parse win rate: '{winRateStr}'");
+                        Log.Warn($"HSGuruService: Could not parse win rate ('{winRateStr}') or total games ('{totalGamesStr}')");
                     }
                 }
                 

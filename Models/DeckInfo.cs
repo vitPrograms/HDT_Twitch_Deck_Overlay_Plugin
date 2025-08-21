@@ -38,6 +38,12 @@ namespace TwitchDeckOverlay.Models
         public DeckStatistics Statistics { get; set; } = new DeckStatistics();
         public DeckStatisticsInfo OnlineStats { get; set; }
         
+        public class MatchupData
+        {
+            public double WinRate { get; set; }
+            public int TotalGames { get; set; }
+        }
+
         private static readonly Dictionary<string, string> ImbuedHeroPowers = new Dictionary<string, string>
     {
         { "Hunter", "https://d15f34w2p8l1cc.cloudfront.net/hearthstone/27b1ba51fdb28375a2a67966b74267dfb1b9c25671b94b45d23aa80a14df145e.png" },

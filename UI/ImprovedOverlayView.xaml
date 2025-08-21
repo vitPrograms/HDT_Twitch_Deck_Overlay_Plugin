@@ -72,6 +72,165 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <!-- Анімація обертання для логотипу завантаження -->
+        <Storyboard x:Key="LoadingRotationAnimation" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                             From="0" To="360" Duration="0:0:1" />
+        </Storyboard>
+
+        <!-- Анімація стрибка для логотипу завантаження -->
+        <Storyboard x:Key="LoadingJumpAnimation" RepeatBehavior="Forever">
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(TranslateTransform.Y)"
+                                         Duration="0:0:0.8">
+                <LinearDoubleKeyFrame KeyTime="0%" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="25%" Value="-8"/>
+                <LinearDoubleKeyFrame KeyTime="50%" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="75%" Value="-4"/>
+                <LinearDoubleKeyFrame KeyTime="100%" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleX)"
+                                         Duration="0:0:0.8">
+                <LinearDoubleKeyFrame KeyTime="0%" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="49%" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="50%" Value="-1"/>
+                <LinearDoubleKeyFrame KeyTime="99%" Value="-1"/>
+                <LinearDoubleKeyFrame KeyTime="100%" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <!-- Стиль для ComboBox -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#FF3C4043"/>
+            <Setter Property="BorderBrush" Value="#FF3C4043"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FFD4D4D4"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Grid.Column="2"
+                                          Focusable="False"
+                                          IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="#FF3C4043"
+                                                BorderBrush="#FF3C4043"  
+                                                BorderThickness="1"
+                                                CornerRadius="3">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition Width="20" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="1" Margin="1" Background="#FF5A5A5A" CornerRadius="2">
+                                                    <Path x:Name="Arrow" Grid.Column="1" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                          Data="M0,0 L4,4 L8,0 Z" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite"
+                                              IsHitTestVisible="False"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                              Margin="5,2,25,2"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left"/>
+                            <TextBox x:Name="PART_EditableTextBox"
+                                     Style="{x:Null}"
+                                     Template="{x:Null}"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Margin="4,1,24,1"
+                                     Focusable="True"
+                                     Background="Transparent"
+                                     Visibility="Hidden"
+                                     IsReadOnly="{TemplateBinding IsReadOnly}"/>
+                            <Popup x:Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                      MinWidth="{TemplateBinding ActualWidth}"
+                                      SnapsToDevicePixels="True">
+                                    <Border x:Name="DropDownBorder"
+                                            Background="#FF252526"
+                                            BorderThickness="1"
+                                            BorderBrush="#FF404040"/>
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel>
+                                            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="DropDownBorder" Property="MinHeight" Value="95"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#FF888888"/>
+                            </Trigger>
+                            <Trigger Property="IsGrouping" Value="True">
+                                <Setter Property="ScrollViewer.CanContentScroll" Value="False"/>
+                            </Trigger>
+                            <Trigger SourceName="Popup" Property="Popup.AllowsTransparency" Value="True">
+                                <Setter TargetName="DropDownBorder" Property="CornerRadius" Value="3"/>
+                                <Setter TargetName="DropDownBorder" Property="Margin" Value="0,2,0,0"/>
+                            </Trigger>
+                            <Trigger Property="IsEditable" Value="True">
+                                <Setter Property="IsTabStop" Value="False"/>
+                                <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ContentSite" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для ComboBoxItem -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#FFD4D4D4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Border"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#FF505050"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#FF606060"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#FF888888"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -119,6 +278,11 @@
                     
                     <!-- Кнопки управління -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Style="{StaticResource ControlButtonStyle}" 
+                                Click="PasteDeckCodeButton_Click"
+                                ToolTip="Paste Deck Code">
+                            <TextBlock Text="📋" FontSize="14" FontWeight="Bold"/>
+                        </Button>
                         <Button Style="{StaticResource ControlButtonStyle}" 
                                 Click="MinimizeButton_Click"
                                 ToolTip="Minimize">
@@ -183,6 +347,7 @@
                     <!-- Основна інформація про колоду (компактно) -->
                     <Grid Margin="0,0,0,10">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -295,9 +460,66 @@
                                 </Border>
                             </StackPanel>
                         </Grid>
-                        
+
+                        <!-- HSGuru Filters -->
+                        <Grid Grid.Row="1" Margin="0,5,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- HSGuru Logo -->
+                            <Image Grid.Column="0" Source="/TwitchDeckOverlay;component/Assets/hsguru-logo.png" Width="24" Height="24" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,8,0">
+                                <Image.RenderTransform>
+                                    <TransformGroup>
+                                        <TranslateTransform />
+                                        <ScaleTransform CenterX="12" CenterY="12" />
+                                    </TransformGroup>
+                                </Image.RenderTransform>
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsLoadingHSGuruData}" Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard Storyboard="{StaticResource LoadingJumpAnimation}" x:Name="LoadingJumpAnimationBegin"/>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <StopStoryboard BeginStoryboardName="LoadingJumpAnimationBegin"/>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+
+                            <!-- Rank ComboBox -->
+                            <ComboBox Grid.Column="1" x:Name="HSGuruRankFilterComboBox"
+                                      Margin="0,0,5,0"
+                                      HorizontalAlignment="Stretch"
+                                      ToolTip="Filter by Rank">
+                                <ComboBoxItem Content="All Ranks" Tag="all"/>
+                                <ComboBoxItem Content="Diamond to Legend" Tag="diamond_to_legend"/>
+                                <ComboBoxItem Content="Diamond 4-1" Tag="diamond_4to1"/>
+                                <ComboBoxItem Content="Legend" Tag="legend"/>
+                                <ComboBoxItem Content="Top 5000" Tag="top_5k"/>
+                                <ComboBoxItem Content="Top Legend" Tag="top_legend"/>
+                            </ComboBox>
+
+                            <!-- Period ComboBox -->
+                            <ComboBox Grid.Column="2" x:Name="HSGuruPeriodFilterComboBox"
+                                      Margin="5,0,0,0"
+                                      HorizontalAlignment="Stretch"
+                                      ToolTip="Filter by Time Period">
+                                <ComboBoxItem Content="Past Week" Tag="past_week"/>
+                                <ComboBoxItem Content="Past 3 Days" Tag="past_3_days"/>
+                                <ComboBoxItem Content="Past Day" Tag="past_day"/>
+                                <ComboBoxItem Content="Past 6 Hours" Tag="past_6_hours"/>
+                            </ComboBox>
+                        </Grid>
+
                         <!-- Другий рядок: Статистика з іконками -->
-                        <Grid Grid.Row="1" Margin="0,8,0,0">
+                        <Grid Grid.Row="2" Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
@@ -344,7 +566,7 @@
                         </Grid>
                         
                         <!-- Третій рядок: Графік мани -->
-                        <Grid Grid.Row="2" Margin="0,6,0,0">
+                        <Grid Grid.Row="3" Margin="0,6,0,0">
                             <Border Background="#FF3C4043" CornerRadius="6" Padding="10,6" BorderBrush="#FF5A5A5A" BorderThickness="1">
                                 <StackPanel>
                                     <TextBlock Text="Mana Curve" FontSize="10" Foreground="#FFAAAAAA" 
@@ -355,7 +577,7 @@
                         </Grid>
                         
                         <!-- Четвертий рядок: Матчапи -->
-                        <Grid Grid.Row="3" Margin="0,6,0,0">
+                        <Grid Grid.Row="4" Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
