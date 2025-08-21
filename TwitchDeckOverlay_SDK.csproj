@@ -28,7 +28,6 @@
     <PackageReference Include="ControlzEx" Version="4.4.0" />
     <PackageReference Include="Costura.Fody" Version="6.0.0">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Fody" Version="6.9.2">
       <PrivateAssets>all</PrivateAssets>
@@ -71,13 +70,13 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="HearthDb">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.8\HearthDb.dll</HintPath>
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.9\HearthDb.dll</HintPath>
     </Reference>
     <Reference Include="HearthMirror">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.8\HearthMirror.dll</HintPath>
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.9\HearthMirror.dll</HintPath>
     </Reference>
     <Reference Include="HearthstoneDeckTracker">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.8\HearthstoneDeckTracker.exe</HintPath>
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.9\HearthstoneDeckTracker.exe</HintPath>
     </Reference>
   </ItemGroup>
 
