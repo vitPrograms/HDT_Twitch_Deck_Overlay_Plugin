@@ -255,7 +255,7 @@ namespace TwitchDeckOverlay.Services
                 Log.Info("HSGuruService: Starting to parse class matchups...");
                 
                 // Updated regex to capture class name, win rate, and total games
-                var matchupPattern = @"<td><span class=""tag player-name \w+""><span class=""basic-black-text"">([^<]+)</span></span></td>\s*<td>\s*<span[^>]*>\s*<span class=""basic-black-text"">\s*(\d+\.?\d*)\s*</span>\s*</span>\s*</td>\s*<td>(\d+)(?:\s*\([\d.]+%\))?</td>";
+                var matchupPattern = @"<tr>\s*<td><span class=""tag player-name \w+""><span class=""basic-black-text"">([^<]+)</span></span></td>\s*<td>\s*<span[^>]*>\s*<span class=""basic-black-text(?: [^""]+)?"">\s*(\d+\.?\d*)\s*(?:<br/>)?\s*(?:\w+)?\s*</span>\s*</span>\s*</td>\s*<td>(\d+)(?:\s*\([\d.]+%\))?</td>\s*</tr>";
                 var matches = Regex.Matches(html, matchupPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
                 Log.Info($"HSGuruService: Found {matches.Count} potential matchup matches with new pattern");

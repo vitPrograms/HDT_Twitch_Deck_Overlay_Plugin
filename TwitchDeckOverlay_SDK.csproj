@@ -70,13 +70,13 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="HearthDb">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.9\HearthDb.dll</HintPath>
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.16\HearthDb.dll</HintPath>
     </Reference>
     <Reference Include="HearthMirror">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.9\HearthMirror.dll</HintPath>
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.16\HearthMirror.dll</HintPath>
     </Reference>
     <Reference Include="HearthstoneDeckTracker">
-      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.9\HearthstoneDeckTracker.exe</HintPath>
+      <HintPath>C:\Users\beley\AppData\Local\HearthstoneDeckTracker\app-1.46.16\HearthstoneDeckTracker.exe</HintPath>
     </Reference>
   </ItemGroup>
 

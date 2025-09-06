@@ -17,3 +17,7 @@ packages/
 *.cache
 *.bak
 *.tmp
+
+Assets/
+Hearthstone Deck Tracker/
+hsguruResponse.txt
