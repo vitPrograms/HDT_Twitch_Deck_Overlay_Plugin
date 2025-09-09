@@ -25,7 +25,7 @@ namespace TwitchDeckOverlay
         public string Description => "Displays decks shared in a Twitch chat";
         public string ButtonText => "Settings";
         public string Author => "Proogro";
-        public Version Version => new Version(1, 1, 2);
+        public Version Version => new Version(1, 1, 3);
         public MenuItem MenuItem => _menuItem;
 
         public Plugin()
@@ -52,7 +52,10 @@ namespace TwitchDeckOverlay
             Core.OverlayCanvas.Children.Add(_overlay);
 
             _deckManager.Initialize();
-            
+
+            // Subscribe to collection changed event
+            Hearthstone_Deck_Tracker.Hearthstone.CollectionHelpers.Hearthstone.OnCollectionChanged += OnHearthstoneCollectionChanged;
+
             // Запускаємо періодичну перевірку здоров'я підключення
             StartHealthCheckTimer();
             
@@ -63,6 +66,9 @@ namespace TwitchDeckOverlay
 
         public void OnUnload()
         {
+            // Unsubscribe from collection changed event
+            Hearthstone_Deck_Tracker.Hearthstone.CollectionHelpers.Hearthstone.OnCollectionChanged -= OnHearthstoneCollectionChanged;
+
             _healthCheckTimer?.Stop();
             _healthCheckTimer = null;
             _deckManager.Shutdown();
@@ -99,6 +105,12 @@ namespace TwitchDeckOverlay
         public void OnUpdate()
         {
 
+        }
+
+        private void OnHearthstoneCollectionChanged()
+        {
+            Log.Info("Hearthstone collection changed. Triggering plugin collection update.");
+            _deckManager.UpdateCollection();
         }
 
         private void StartHealthCheckTimer()

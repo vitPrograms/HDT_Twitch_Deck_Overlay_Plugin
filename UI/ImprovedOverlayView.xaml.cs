@@ -41,6 +41,40 @@ namespace TwitchDeckOverlay.UI
             InitializeHSGuruFilters();
         }
 
+        public void UpdateCardCollection(Hearthstone_Deck_Tracker.Hearthstone.Collection hdtCollection)
+        {
+            Log.Info("ImprovedOverlayView: Received updated Hearthstone collection.");
+            Dispatcher.Invoke(() =>
+            {
+                if (hdtCollection?.Cards != null)
+                {
+                    _collectionCache = new Dictionary<int, int>();
+                    foreach (var cardEntry in hdtCollection.Cards)
+                    {
+                        // cardEntry.Value is int[] { normalCount, goldenCount, diamondCount, signatureCount }
+                        _collectionCache[cardEntry.Key] = cardEntry.Value.Sum();
+                    }
+                    _lastCollectionUpdate = DateTime.UtcNow; // Оновлюємо час останнього оновлення
+                    Log.Info($"ImprovedOverlayView: Collection cache updated with {hdtCollection.Cards.Count} unique cards.");
+
+                    // Якщо деталі колоди відкриті, перерахуйте вартість пилу та оновіть UI
+                    if (_currentDeckDetails != null && DetailsPanel.Visibility == Visibility.Visible)
+                    {
+                        CalculateDustCosts(_currentDeckDetails);
+                        UpdateOnlineStatisticsUI(_currentDeckDetails); // Оновити UI для відображення змін
+                        // Також потрібно оновити список карт, щоб відобразити статус IsMissingInCollection
+                        var sortedCards = _currentDeckDetails.Cards.OrderBy(c => c.Cost).ThenBy(c => c.Name).ToList();
+                        DetailsCardList.ItemsSource = ConvertToHdtCards(sortedCards); // Перезавантажити список карт
+                    }
+                }
+                else
+                {
+                    Log.Warn("ImprovedOverlayView: Received empty or null Hearthstone collection.");
+                    _collectionCache = null; // Очищуємо кеш, якщо колекція порожня
+                }
+            });
+        }
+
         private void InitializeHSGuruFilters()
         {
             var config = PluginConfig.Instance;

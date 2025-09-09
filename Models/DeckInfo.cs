@@ -84,14 +84,15 @@ namespace TwitchDeckOverlay.Models
         public int Cost { get; set; }
         public string ImageUrl { get; set; }
         public int RarityId { get; set; }
+        public int CardSetId { get; set; }
         public BitmapImage ImageBitmap { get; set; }
         public string CropImage { get; set; }
         public bool HasComponents { get; set; }
         public List<CardInfo> Components { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
         public bool IsMissingInCollection { get; set; }
-        public int CardSetId {  get; set; }
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {

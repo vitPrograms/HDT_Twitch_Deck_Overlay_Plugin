@@ -16,6 +16,7 @@ using System.Windows;
 using System.Windows.Media;
 using TwitchDeckOverlay.Utility;
 using Hearthstone_Deck_Tracker.Hearthstone;
+using TwitchDeckOverlay.UI; // Додано для ImprovedOverlayView
 
 namespace TwitchDeckOverlay
 {
@@ -128,6 +129,16 @@ namespace TwitchDeckOverlay
             _resourceMonitor?.Dispose();
             
             Log.Info("TwitchDeckManager shutdown with performance reports");
+        }
+
+        public void UpdateCollection()
+        {
+            Log.Info("Triggered TwitchDeckManager collection update.");
+            var collection = Hearthstone_Deck_Tracker.Hearthstone.CollectionHelpers.Hearthstone.GetCollection().Result;
+            if (_overlayView is ImprovedOverlayView improvedOverlayView)
+            {
+                _dispatcher.Invoke(() => improvedOverlayView.UpdateCardCollection(collection));
+            }
         }
 
         public void ApplyConfig(PluginConfig config)
